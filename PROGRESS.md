@@ -7,7 +7,8 @@
 - Done — M5 unweighted hazard and population-weighted exposure under four schemes, robust-priority flag and Spearman sensitivity matrix.
 - Done — M6 Drivers screen, random forest for LST, spatial CV metrics, global SHAP importance and signed explanations for every modeled cell.
 - Done — M7 Action Plan tab ranks eligible cells by exposure, reports cumulative ROI exposure coverage and estimates bare-to-tree ΔLST with paired bootstrap intervals.
-- Checks — `make check` passes Ruff, 96 offline tests and Bandit. All seven live tests passed in M7. Run `gitleaks detect --redact` before every milestone commit.
+- Done — M8 Trends tab for monthly daytime/nighttime MODIS LST and Sentinel-5P NO₂, STL, Mann–Kendall p-values, annual Sen slopes, 2020 annotation and rolling urban/green comparisons.
+- Checks — `make check` passes Ruff, 107 offline tests and Bandit. All eight live tests passed in M8. Run `gitleaks detect --redact` before every milestone commit.
 - Setup — Use `uv venv --python 3.12`, then `make install hooks`. The hook requires Gitleaks v8.24.3 on PATH or in `.local/bin`.
 - Decisions — Local project ID comes from `EE_PROJECT` in ignored `.env`. Local initialization delegates credential discovery to the SDK. Deployment accepts EE_SERVICE_ACCOUNT_JSON via environment or a supplied st.secrets mapping.
 - Decisions — Use the 2019–2025 analysis window. Reject grids conservatively using the buffered-circle area bound. Coordinate swaps are detectable only when a value violates its named axis range.
@@ -21,4 +22,7 @@
 - Known issue — Full-period live extraction latency varies. M6 QA measured 65.9 s against the 60 s target, then the same test passed in 9.1 s including initialization.
 - Decisions — Screen cells ≥1 ha with ≥25% combined bare/shrub/grass, zero classified water and <50% built fraction. Rank by selected weighted exposure; the denominator includes all scored cells. Scenario transfers only existing bare cover with other predictors fixed. Use 100 spatial block bootstrap RF refits and 95% percentile intervals.
 - Live M7 QA — Delhi airport area, summer 2023, 25% bare-to-tree conversion: ten sites cover 6.75% of summed exposure. Highest-ranked site ΔLST −0.31 °C (95% bootstrap interval −0.67 to −0.01 °C).
-- Next — Wait for approval before M8 trends.
+- Decisions — Infer trends with ≥24 observed months, ≥80% completeness inside the observed span and gaps ≤2 months. Interpolate for STL only; Sen slopes use actual month spacing. Report ordinary Mann–Kendall p-values with a serial-correlation caveat.
+- Decisions — Use a fixed period-modal Dynamic World mask (built versus trees/grass/shrub); compare trailing means only across three consecutive observations. Preserve coarse sensor support and report monthly valid-area coverage.
+- Live M8 QA — Delhi, 5 km, 2019–2025: the Trends screen returned day LST −0.3868 °C/year, night LST +0.1857 °C/year, NO₂ −4.768e−6 mol/m²/year. MODIS collection and QA verified against the [Earth Engine catalog](https://developers.google.com/earth-engine/datasets/catalog/MODIS_061_MOD11A2).
+- Next — Wait for approval before M9 reporting and exports.

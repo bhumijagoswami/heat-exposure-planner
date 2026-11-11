@@ -13,10 +13,14 @@ from src.model import fit_drivers, InsufficientDriverData
 from src.validate import validate_inputs
 
 
-@st.cache_data(ttl=86400, max_entries=50, show_spinner=False)
-def _load_cells(request, season):
+def initialize_app_earth_engine():
     secrets_file = Path(__file__).resolve().parents[2] / ".streamlit" / "secrets.toml"
     initialize_earth_engine(st.secrets if secrets_file.exists() else None)
+
+
+@st.cache_data(ttl=86400, max_entries=50, show_spinner=False)
+def _load_cells(request, season):
+    initialize_app_earth_engine()
     return extract_cells(request, season=season).cells
 
 

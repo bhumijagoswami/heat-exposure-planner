@@ -17,7 +17,7 @@ class Grid:
     cells: gpd.GeoDataFrame
 
 
-def build_grid(request: AnalysisRequest) -> Grid:
+def projected_roi(request: AnalysisRequest) -> tuple[Polygon, int]:
     request = validate_inputs(**asdict(request))
     if request.lat >= 84:
         epsg = 32661
@@ -30,6 +30,11 @@ def build_grid(request: AnalysisRequest) -> Grid:
     x, y = transform.transform(request.lon, request.lat)
     # 360 segments keep the circle's chord error below 0.6 m at the maximum radius.
     roi = Point(x, y).buffer(request.radius_km * 1000, quad_segs=90)
+    return roi, epsg
+
+
+def build_grid(request: AnalysisRequest) -> Grid:
+    roi, epsg = projected_roi(request)
     west, south, east, north = roi.bounds
     size = request.cell_size_m
     rows = []
