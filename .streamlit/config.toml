@@ -1,0 +1,11 @@
+[theme]
+base = "dark"
+
+[browser]
+gatherUsageStats = false
+
+[client]
+showErrorDetails = "none"
+
+[secrets]
+files = [".streamlit/secrets.toml"]
