@@ -11,7 +11,8 @@
 - Done — M9 Briefing tab and in-memory CSV, WGS84 GeoJSON, Markdown and HTML downloads from the active analysis and planner selection.
 - Done — M10 responsive seven-tab dashboard, overview KPIs, selectable four-layer map, methodology and offline Delhi/Bengaluru presets.
 - Done — M11 shared session cooldown, bounded Earth Engine transport, safe retry/error logs and offline/live failure-path QA.
-- Checks — `make check` passes Ruff, 128 offline tests and Bandit. The M11 dependency audit found no known vulnerabilities. Run `gitleaks detect --redact` before every milestone commit.
+- Done — M12 README, desktop/mobile screenshots, architecture and methodology, Community Cloud setup, and a ten-question viva guide.
+- Checks — `make check` passes Ruff, 131 offline tests and Bandit. The release dependency audit found no known vulnerabilities. Run `gitleaks detect --redact` before every milestone commit.
 - Setup — Use `uv venv --python 3.12`, then `make install hooks`. The hook requires Gitleaks v8.24.3 on PATH or in `.local/bin`.
 - Decisions — Local project ID comes from `EE_PROJECT` in ignored `.env`. Local initialization delegates credential discovery to the SDK. Deployment accepts EE_SERVICE_ACCOUNT_JSON via environment or a supplied st.secrets mapping.
 - Decisions — Use the 2019–2025 analysis window. Reject grids conservatively using the buffered-circle area bound. Coordinate swaps are detectable only when a value violates its named axis range.
@@ -32,4 +33,5 @@
 - Live M9 QA — All nine live tests passed. Delhi airport briefing reported 54 robust-priority cells and 28.2% of estimated residents; checked CSV/GeoJSON counts and scenario values against the analysis.
 - M10 QA — All nine live tests passed. Checked map click-to-details and seven tabs at 390 px and 1360 px in Chrome. Summer 2019–2021 presets include 353 Delhi and 355 Bengaluru cells plus 36 monthly observations each; local Parquet reads were under 0.1 s.
 - Live M11 QA — All ten live tests passed, including default Delhi timing and a Pacific ocean ROI. Tested 90-second socket timeout configuration, two SDK retries with backoff, cache isolation and hostile inputs offline. Full history and local QA logs scanned clean.
-- Next — Wait for approval before M12 documentation and deployment instructions.
+- Release QA — Ten live tests passed. Python 3.12 Linux wheel resolution passed with required hashes. Hosted secrets, missing secrets and malformed configuration are covered offline.
+- Handoff — Deployment instructions are in README.md. Rotate any deployment service-account key after grading using SECURITY.md.

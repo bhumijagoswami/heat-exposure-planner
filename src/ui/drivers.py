@@ -1,9 +1,9 @@
 """Streamlit controls and results for the LST driver analysis."""
 
 import logging
-from pathlib import Path
 
 import streamlit as st
+from streamlit.errors import StreamlitSecretNotFoundError
 
 from .limits import begin_compute
 
@@ -25,8 +25,16 @@ from src.validate import validate_inputs
 
 @st.cache_resource(ttl=CACHE_TTL_SECONDS, max_entries=1, show_spinner=False)
 def initialize_app_earth_engine():
-    secrets_file = Path(__file__).resolve().parents[2] / ".streamlit" / "secrets.toml"
-    initialize_earth_engine(st.secrets if secrets_file.exists() else None)
+    # Community Cloud supplies secrets through Streamlit's configured secret store.
+    try:
+        configured = bool(st.secrets)
+    except StreamlitSecretNotFoundError as exc:
+        if exc.error_id != "no-secrets-found":
+            raise EarthEngineAuthError(
+                "Could not load Streamlit deployment secrets."
+            ) from None
+        configured = False
+    initialize_earth_engine(st.secrets if configured else None)
 
 
 @st.cache_data(ttl=CACHE_TTL_SECONDS, max_entries=CACHE_MAX_ENTRIES, show_spinner=False)

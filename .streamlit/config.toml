@@ -12,9 +12,6 @@ gatherUsageStats = false
 [client]
 showErrorDetails = "none"
 
-[secrets]
-files = [".streamlit/secrets.toml"]
-
 [theme.sidebar]
 backgroundColor = "#10252b"
 secondaryBackgroundColor = "#1c363d"
