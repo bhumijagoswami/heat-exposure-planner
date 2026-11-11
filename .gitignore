@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+*.json
+*.pem
+*.key
+data/cache/
+.venv/
+.local/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.DS_Store

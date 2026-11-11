@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+PATH="$PWD/.local/bin:$PATH"
+export PATH
+gitleaks protect --staged --redact --no-banner
+.venv/bin/ruff check --quiet .
