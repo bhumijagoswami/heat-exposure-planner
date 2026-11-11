@@ -97,6 +97,7 @@ def build_layers(
     request: AnalysisRequest,
     *,
     season: Literal["annual", "summer"] = "annual",
+    clip_to_roi: bool = True,
 ) -> ee.Image:
     """Build one consistent period; summer uses JJA north and DJF south within selected years.
 
@@ -128,23 +129,23 @@ def build_layers(
     )
     indices = _with_schema(optical.map(_indices).median(), INDICES)
     elevation = ee.Image(config.SRTM).select("elevation")
-    return (
-        ee.Image.cat(
-            lst,
-            no2,
-            indices,
-            _land_cover(scenes(config.DYNAMIC_WORLD)),
-            elevation.rename("elevation_m"),
-            ee.Terrain.slope(elevation).rename("slope_deg"),
-            _population(roi),
-        )
-        .clip(roi)
-        .set(
-            {
-                "season": season,
-                "start_year": request.start_year,
-                "end_year": request.end_year,
-                "population_year": config.WORLDPOP_YEAR,
-            }
-        )
+    layers = ee.Image.cat(
+        lst,
+        no2,
+        indices,
+        _land_cover(scenes(config.DYNAMIC_WORLD)),
+        elevation.rename("elevation_m"),
+        ee.Terrain.slope(elevation).rename("slope_deg"),
+        _population(roi),
+    )
+    # Zonal reducers handle edge pixels using their actual overlap with the cell.
+    if clip_to_roi:
+        layers = layers.clip(roi)
+    return layers.set(
+        {
+            "season": season,
+            "start_year": request.start_year,
+            "end_year": request.end_year,
+            "population_year": config.WORLDPOP_YEAR,
+        }
     )
