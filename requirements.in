@@ -1,5 +1,7 @@
 bandit==1.9.4
+earthengine-api==1.7.52
 pip==26.3
 pip-tools==7.6.2
 pytest==9.2.0
+python-dotenv==1.2.4
 ruff==0.14.10
