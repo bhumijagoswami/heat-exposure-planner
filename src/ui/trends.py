@@ -1,13 +1,21 @@
 """Monthly observations, seasonal trend estimates and rolling land-cover comparisons."""
 
 import logging
-from time import monotonic
 
 import altair as alt
 import pandas as pd
 import streamlit as st
 
-from src.config import FIRST_YEAR, LAST_YEAR, MIN_RADIUS_KM, MAX_RADIUS_KM
+from .limits import begin_compute
+
+from src.config import (
+    CACHE_MAX_ENTRIES,
+    CACHE_TTL_SECONDS,
+    FIRST_YEAR,
+    LAST_YEAR,
+    MIN_RADIUS_KM,
+    MAX_RADIUS_KM,
+)
 from src.gee_auth import EarthEngineAuthError
 from src.trends import (
     METRICS,
@@ -20,7 +28,7 @@ from src.ui.drivers import initialize_app_earth_engine
 from src.validate import validate_inputs
 
 
-@st.cache_data(ttl=86400, max_entries=50, show_spinner=False)
+@st.cache_data(ttl=CACHE_TTL_SECONDS, max_entries=CACHE_MAX_ENTRIES, show_spinner=False)
 def _load_monthly(request):
     initialize_app_earth_engine()
     return fetch_monthly(request)
@@ -111,13 +119,6 @@ def _trend_form():
         )
         run = st.form_submit_button("Load monthly trends")
     if run:
-        now = monotonic()
-        last = st.session_state.get("trends_last_run")
-        if last is not None and now - last < 10:
-            st.warning("Allow 10 seconds between trend requests.")
-            return
-        st.session_state.trends_last_run = now
-        st.session_state.pop("trends_result", None)
         try:
             request = validate_inputs(
                 lat=lat,
@@ -130,6 +131,9 @@ def _trend_form():
         except ValueError as exc:
             st.warning(str(exc))
             return
+        if not begin_compute():
+            return
+        st.session_state.pop("trends_result", None)
         try:
             with st.spinner("Retrieving monthly satellite observations…"):
                 monthly = _load_monthly(request)

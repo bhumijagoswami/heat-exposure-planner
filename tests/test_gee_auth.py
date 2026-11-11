@@ -1,5 +1,5 @@
 import traceback
-from unittest.mock import Mock
+from unittest.mock import ANY, Mock
 
 import pytest
 
@@ -11,7 +11,7 @@ def sdk(monkeypatch, tmp_path):
     for key in ("EE_PROJECT", "EE_SERVICE_ACCOUNT_JSON"):
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setattr(gee_auth, "_ENV_FILE", tmp_path / ".env")
-    client = Mock(spec=["Initialize", "ServiceAccountCredentials"])
+    client = Mock(spec=["Initialize", "ServiceAccountCredentials", "data"])
     monkeypatch.setattr(gee_auth, "ee", client)
     return client
 
@@ -19,7 +19,7 @@ def sdk(monkeypatch, tmp_path):
 def test_sdk_uses_existing_login(sdk):
     gee_auth._ENV_FILE.write_text("EE_PROJECT=local-example\n")
     gee_auth.initialize_earth_engine()
-    sdk.Initialize.assert_called_once_with(project="local-example")
+    sdk.Initialize.assert_called_once_with(project="local-example", http_transport=ANY)
     sdk.ServiceAccountCredentials.assert_not_called()
 
 
@@ -27,7 +27,9 @@ def test_process_environment_overrides_dotenv(sdk, monkeypatch):
     gee_auth._ENV_FILE.write_text("EE_PROJECT=local-example\n")
     monkeypatch.setenv("EE_PROJECT", "process-example")
     gee_auth.initialize_earth_engine()
-    sdk.Initialize.assert_called_once_with(project="process-example")
+    sdk.Initialize.assert_called_once_with(
+        project="process-example", http_transport=ANY
+    )
 
 
 @pytest.mark.parametrize("source", ["env", "streamlit"])
@@ -47,6 +49,7 @@ def test_service_account(sdk, monkeypatch, source):
     sdk.Initialize.assert_called_once_with(
         credentials=sdk.ServiceAccountCredentials.return_value,
         project="deployment-example",
+        http_transport=ANY,
     )
 
 

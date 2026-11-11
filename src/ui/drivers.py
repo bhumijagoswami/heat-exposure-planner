@@ -1,11 +1,21 @@
 """Streamlit controls and results for the LST driver analysis."""
 
+import logging
 from pathlib import Path
-from time import monotonic
 
 import streamlit as st
 
-from src.config import CELL_SIZES_M, FIRST_YEAR, LAST_YEAR, MIN_RADIUS_KM, MAX_RADIUS_KM
+from .limits import begin_compute
+
+from src.config import (
+    CACHE_MAX_ENTRIES,
+    CACHE_TTL_SECONDS,
+    CELL_SIZES_M,
+    FIRST_YEAR,
+    LAST_YEAR,
+    MIN_RADIUS_KM,
+    MAX_RADIUS_KM,
+)
 from src.extract import extract_cells, ExtractionError
 from src.gee_auth import initialize_earth_engine, EarthEngineAuthError
 from src.index import score_exposure
@@ -13,12 +23,13 @@ from src.model import fit_drivers, InsufficientDriverData, predictor_label
 from src.validate import validate_inputs
 
 
+@st.cache_resource(ttl=CACHE_TTL_SECONDS, max_entries=1, show_spinner=False)
 def initialize_app_earth_engine():
     secrets_file = Path(__file__).resolve().parents[2] / ".streamlit" / "secrets.toml"
     initialize_earth_engine(st.secrets if secrets_file.exists() else None)
 
 
-@st.cache_data(ttl=86400, max_entries=50, show_spinner=False)
+@st.cache_data(ttl=CACHE_TTL_SECONDS, max_entries=CACHE_MAX_ENTRIES, show_spinner=False)
 def _load_cells(request, season):
     initialize_app_earth_engine()
     return extract_cells(request, season=season).cells
@@ -40,14 +51,6 @@ def render_area_form():
         season = st.selectbox("Period", ["annual", "summer"])
         run = st.form_submit_button("Analyze area", type="primary")
     if run:
-        last = st.session_state.get("driver_last_run")
-        if last is not None and monotonic() - last < 10:
-            st.warning("Allow 10 seconds between analysis requests.")
-            return
-        st.session_state.driver_last_run = monotonic()
-        st.session_state.pop("driver_result", None)
-        st.session_state.pop("planner_input", None)
-        st.session_state.pop("planner_result", None)
         try:
             request = validate_inputs(
                 lat=lat,
@@ -60,6 +63,11 @@ def render_area_form():
         except ValueError as exc:
             st.warning(str(exc))
             return
+        if not begin_compute():
+            return
+        st.session_state.pop("driver_result", None)
+        st.session_state.pop("planner_input", None)
+        st.session_state.pop("planner_result", None)
         try:
             progress = st.progress(10, text="Extracting satellite observations…")
             try:
@@ -77,7 +85,10 @@ def render_area_form():
         except (InsufficientDriverData, ExtractionError, EarthEngineAuthError) as exc:
             st.warning(str(exc))
             return
-        except Exception:
+        except Exception as exc:
+            logging.getLogger(__name__).warning(
+                "Area analysis failed (%s)", type(exc).__name__
+            )
             st.error("Driver analysis could not finish. Please retry.")
             return
 

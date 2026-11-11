@@ -1,5 +1,6 @@
 """Monthly Earth Engine observations and gap-aware seasonal trend statistics."""
 
+import logging
 from dataclasses import dataclass
 
 import ee
@@ -120,7 +121,15 @@ def fetch_monthly(request: AnalysisRequest) -> pd.DataFrame:
             records.extend(rows)
         except TrendExtractionError:
             raise
-        except Exception:
+        except TimeoutError:
+            logging.getLogger(__name__).warning("Earth Engine trends batch timed out")
+            raise TrendExtractionError(
+                "Earth Engine timed out while retrieving monthly observations. Retry this area or reduce its radius."
+            ) from None
+        except Exception as exc:
+            logging.getLogger(__name__).warning(
+                "Earth Engine trends batch failed (%s)", type(exc).__name__
+            )
             raise TrendExtractionError(
                 "Could not retrieve monthly Earth Engine data. Please retry."
             ) from None

@@ -507,6 +507,7 @@ httplib2==0.32.1 \
     --hash=sha256:37900eb8a74576bd99fc39ae1dc8409f95f965d45b56cbcb2194bb55f58a90e1 \
     --hash=sha256:82e7a6ab08fcb27879864ddf63dbb529fb032ca336c331cb1597d6dd8b47c92e
     # via
+    #   -r requirements.in
     #   earthengine-api
     #   google-api-python-client
     #   google-auth-httplib2

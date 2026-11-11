@@ -1,5 +1,6 @@
 """Batched Earth Engine zonal statistics with explicit coverage and native-grid counts."""
 
+import logging
 from dataclasses import dataclass
 from typing import Literal
 
@@ -99,7 +100,15 @@ def extract_cells(
             records.extend(result)
         except ExtractionError:
             raise
-        except Exception:
+        except TimeoutError:
+            logging.getLogger(__name__).warning("Earth Engine extract batch timed out")
+            raise ExtractionError(
+                "Earth Engine timed out while extracting cells. Try a smaller radius or a shorter period."
+            ) from None
+        except Exception as exc:
+            logging.getLogger(__name__).warning(
+                "Earth Engine extract batch failed (%s)", type(exc).__name__
+            )
             raise ExtractionError(
                 "Could not extract Earth Engine data. Check access and retry."
             ) from None

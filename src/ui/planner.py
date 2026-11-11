@@ -1,9 +1,10 @@
 """Action Plan tab for the current analysis area."""
 
 import logging
-from time import monotonic
 
 import streamlit as st
+
+from .limits import begin_compute
 
 from src.index import SCHEMES
 from src.planner import MAX_SITES, estimate_scenario, rank_sites
@@ -68,12 +69,8 @@ def render_planner():
     key = (scheme, count, percent)
     saved = st.session_state.get("planner_result")
     if st.button("Estimate temperature change") and (saved is None or saved[0] != key):
-        now = monotonic()
-        last = st.session_state.get("scenario_last_run")
-        if last is not None and now - last < 10:
-            st.warning("Allow 10 seconds between scenario estimates.")
+        if not begin_compute():
             return
-        st.session_state.scenario_last_run = now
         try:
             with st.spinner("Estimating temperature changes and bootstrap intervals…"):
                 result = estimate_scenario(
