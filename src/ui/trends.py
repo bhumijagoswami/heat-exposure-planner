@@ -26,7 +26,7 @@ def _load_monthly(request):
     return fetch_monthly(request)
 
 
-def _chart(series, title, unit):
+def _chart(series, title, unit, source):
     long = (
         series.rename_axis("Month")
         .reset_index()
@@ -66,11 +66,13 @@ def _chart(series, title, unit):
             .encode(x="start:T", x2="end:T")
         )
         chart = shade + chart
-    st.altair_chart(chart.properties(title=title, height=275), width="stretch")
+    st.altair_chart(
+        chart.properties(title=alt.Title(title, subtitle=source), height=275),
+        width="stretch",
+    )
 
 
-def render_trends():
-    st.header("Monthly exposure trends")
+def _trend_form():
     active = st.session_state.get("planner_input")
     default = active[0] if active else None
     with st.form("trend_request"):
@@ -141,6 +143,12 @@ def render_trends():
             )
             st.error("Monthly trends could not finish. Please retry.")
             return
+
+
+def render_trends(offline=False):
+    st.header("Monthly exposure trends")
+    if not offline:
+        _trend_form()
     if "trends_result" not in st.session_state:
         return
     request, monthly = st.session_state.trends_result
@@ -178,10 +186,16 @@ def render_trends():
         pd.DataFrame({"Observed": obs, "Deseasonalized": trend.adjusted}),
         f"{name} across the area",
         unit,
+        source,
     )
     rolling = rolling_comparison(monthly, metric)
     if rolling.notna().any().any():
-        _chart(rolling, f"{name} by land cover · trailing 3-month mean", unit)
+        _chart(
+            rolling,
+            f"{name} by land cover · trailing 3-month mean",
+            unit,
+            f"{source} · Dynamic World",
+        )
     else:
         st.info("Neither land-cover group has three consecutive observed months.")
     st.caption(

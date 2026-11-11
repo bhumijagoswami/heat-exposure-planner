@@ -144,7 +144,8 @@ def test_small_area_keeps_site_ranking_in_app(monkeypatch):
     )
     monkeypatch.setattr(drivers, "_load_cells", lambda request, season: grid)
     page = AppTest.from_file("../app.py", default_timeout=40).run()
-    page.button[0].click().run()
+    page.sidebar.selectbox[0].select("Custom live analysis").run()
+    next(b for b in page.button if b.label == "Analyze area").click().run()
     assert not page.exception
     assert any("150 complete cells" in w.value for w in page.warning)
     assert len(page.dataframe) == 1

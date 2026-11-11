@@ -95,11 +95,12 @@ def test_drivers_screen(cells, monkeypatch):
 
     monkeypatch.setattr(drivers, "_load_cells", lambda request, season: cells)
     page = AppTest.from_file("../app.py", default_timeout=40).run()
+    page.sidebar.selectbox[0].select("Custom live analysis").run()
     assert not page.exception
-    page.button[0].click().run()
+    next(b for b in page.button if b.label == "Analyze area").click().run()
     assert not page.exception
     assert not page.warning
-    assert {metric.label for metric in page.metric} == {
+    assert {metric.label for metric in page.tabs[2].metric} == {
         "Spatial CV R²",
         "Spatial CV RMSE (°C)",
     }

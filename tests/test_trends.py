@@ -88,6 +88,7 @@ def test_trends_screen(monkeypatch):
             frame[f"{zone}_{metric}_coverage"] = 90
     monkeypatch.setattr(ui, "_load_monthly", lambda request: frame)
     page = AppTest.from_file("../app.py", default_timeout=30).run()
+    page.sidebar.selectbox[0].select("Custom live analysis").run()
     next(
         button for button in page.button if button.label == "Load monthly trends"
     ).click().run()

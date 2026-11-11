@@ -9,7 +9,7 @@ def render_report():
     st.header("Exposure briefing")
     if "planner_input" not in st.session_state:
         st.info(
-            "Run an area analysis in Drivers to prepare the briefing and downloads."
+            "Analyze a study area to prepare the briefing and downloads."
         )
         return
     request, season, cells = st.session_state.planner_input

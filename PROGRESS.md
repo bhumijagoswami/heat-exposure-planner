@@ -9,7 +9,8 @@
 - Done — M7 Action Plan tab ranks eligible cells by exposure, reports cumulative ROI exposure coverage and estimates bare-to-tree ΔLST with paired bootstrap intervals.
 - Done — M8 Trends tab for monthly daytime/nighttime MODIS LST and Sentinel-5P NO₂, STL, Mann–Kendall p-values, annual Sen slopes, 2020 annotation and rolling urban/green comparisons.
 - Done — M9 Briefing tab and in-memory CSV, WGS84 GeoJSON, Markdown and HTML downloads from the active analysis and planner selection.
-- Checks — `make check` passes Ruff, 113 offline tests and Bandit. The M9 dependency audit found no known vulnerabilities. Run `gitleaks detect --redact` before every milestone commit.
+- Done — M10 responsive seven-tab dashboard, overview KPIs, selectable four-layer map, methodology and offline Delhi/Bengaluru presets.
+- Checks — `make check` passes Ruff, 116 offline tests and Bandit. The M9 dependency audit found no known vulnerabilities. Run `gitleaks detect --redact` before every milestone commit.
 - Setup — Use `uv venv --python 3.12`, then `make install hooks`. The hook requires Gitleaks v8.24.3 on PATH or in `.local/bin`.
 - Decisions — Local project ID comes from `EE_PROJECT` in ignored `.env`. Local initialization delegates credential discovery to the SDK. Deployment accepts EE_SERVICE_ACCOUNT_JSON via environment or a supplied st.secrets mapping.
 - Decisions — Use the 2019–2025 analysis window. Reject grids conservatively using the buffered-circle area bound. Coordinate swaps are detectable only when a value violates its named axis range.
@@ -28,4 +29,5 @@
 - Live M8 QA — Delhi, 5 km, 2019–2025: the Trends screen returned day LST −0.3868 °C/year, night LST +0.1857 °C/year, NO₂ −4.768e−6 mol/m²/year. MODIS collection and QA verified against the [Earth Engine catalog](https://developers.google.com/earth-engine/datasets/catalog/MODIS_061_MOD11A2).
 - Decisions — Report five highest-scoring cells and three strongest drivers. Robust-priority population share uses all available population, including cells with unknown priority. Missing population and unknown priority are disclosed. Only matching scenario settings appear in downloads.
 - Live M9 QA — All nine live tests passed. Delhi airport briefing reported 54 robust-priority cells and 28.2% of estimated residents; checked CSV/GeoJSON counts and scenario values against the analysis.
-- Next — Wait for approval before M10 UI polish and offline demo presets.
+- M10 QA — All nine live tests passed. Checked map click-to-details and seven tabs at 390 px and 1360 px in Chrome. Summer 2019–2021 presets include 353 Delhi and 355 Bengaluru cells plus 36 monthly observations each; local Parquet reads were under 0.1 s.
+- Next — Wait for approval before M11 hardening and QA.

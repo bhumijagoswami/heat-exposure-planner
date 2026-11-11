@@ -12,7 +12,7 @@ from src.planner import MAX_SITES, estimate_scenario, rank_sites
 def render_planner():
     st.header("Intervention planner")
     if "planner_input" not in st.session_state:
-        st.info("Run an area analysis in Drivers to rank planting sites.")
+        st.info("Analyze a study area to rank planting sites.")
         return
     request, season, cells = st.session_state.planner_input
     st.caption(

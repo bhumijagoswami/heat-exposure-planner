@@ -24,8 +24,8 @@ def _load_cells(request, season):
     return extract_cells(request, season=season).cells
 
 
-def render_drivers():
-    st.header("Land-surface temperature drivers")
+def render_area_form():
+    st.caption("Earth Engine · live observations")
     with st.form("driver_request"):
         left, right = st.columns(2)
         lat = left.number_input("Latitude (°)", -90.0, 90.0, 28.61, format="%.4f")
@@ -38,7 +38,7 @@ def render_drivers():
             "Analysis years", FIRST_YEAR, LAST_YEAR, (FIRST_YEAR, LAST_YEAR)
         )
         season = st.selectbox("Period", ["annual", "summer"])
-        run = st.form_submit_button("Analyze drivers")
+        run = st.form_submit_button("Analyze area", type="primary")
     if run:
         last = st.session_state.get("driver_last_run")
         if last is not None and monotonic() - last < 10:
@@ -61,21 +61,33 @@ def render_drivers():
             st.warning(str(exc))
             return
         try:
-            with st.spinner(
-                "Extracting satellite observations and fitting spatial folds…"
-            ):
+            progress = st.progress(10, text="Extracting satellite observations…")
+            try:
                 cells = _load_cells(request, season)
+                progress.progress(
+                    65, text="Scoring exposure and fitting spatial folds…"
+                )
                 scored = score_exposure(cells).cells
                 st.session_state.planner_input = (request, season, scored)
                 model = fit_drivers(cells)
-            st.session_state.driver_result = (request, season, model)
+                st.session_state.driver_result = (request, season, model)
+                progress.progress(100, text="Analysis complete")
+            finally:
+                progress.empty()
         except (InsufficientDriverData, ExtractionError, EarthEngineAuthError) as exc:
             st.warning(str(exc))
             return
         except Exception:
             st.error("Driver analysis could not finish. Please retry.")
             return
+
+
+def render_drivers():
+    st.header("Land-surface temperature drivers")
     if "driver_result" not in st.session_state:
+        st.info(
+            "Driver results require at least 150 complete cells in three spatial blocks."
+        )
         return
     request, season, model = st.session_state.driver_result
     st.caption(

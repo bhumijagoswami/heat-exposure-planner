@@ -162,8 +162,9 @@ def test_briefing_screen(monkeypatch):
 
     monkeypatch.setattr(drivers, "fit_drivers", no_model)
     app = AppTest.from_file("../app.py", default_timeout=30).run()
+    app.sidebar.selectbox[0].select("Custom live analysis").run()
     next(
-        button for button in app.button if button.label == "Analyze drivers"
+        button for button in app.button if button.label == "Analyze area"
     ).click().run()
     assert not app.exception
     assert len(app.get("download_button")) == 4

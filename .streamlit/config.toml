@@ -1,5 +1,10 @@
 [theme]
 base = "dark"
+primaryColor = "#62d8bb"
+backgroundColor = "#0b191e"
+secondaryBackgroundColor = "#172d34"
+textColor = "#e8f3ef"
+font = "sans-serif"
 
 [browser]
 gatherUsageStats = false
@@ -9,3 +14,7 @@ showErrorDetails = "none"
 
 [secrets]
 files = [".streamlit/secrets.toml"]
+
+[theme.sidebar]
+backgroundColor = "#10252b"
+secondaryBackgroundColor = "#1c363d"
