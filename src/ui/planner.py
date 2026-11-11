@@ -26,9 +26,10 @@ def render_planner():
     scheme = st.selectbox(
         "Exposure weighting",
         list(SCHEMES),
+        key="plan_scheme",
         format_func=lambda name: name.replace("_", " ").title(),
     )
-    count = st.number_input("Number of sites", 1, MAX_SITES, 10)
+    count = st.number_input("Number of sites", 1, MAX_SITES, 10, key="plan_count")
     sites = rank_sites(cells, scheme, count)
     if sites.empty:
         st.info("No scored cells in this area meet the planting criteria.")
@@ -58,7 +59,11 @@ def render_planner():
         "The 95% interval comes from 100 spatial block bootstrap refits."
     )
     percent = st.slider(
-        "Share of existing bare cover converted to trees (%)", 0, 100, 25
+        "Share of existing bare cover converted to trees (%)",
+        0,
+        100,
+        25,
+        key="plan_percent",
     )
     key = (scheme, count, percent)
     saved = st.session_state.get("planner_result")

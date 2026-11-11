@@ -9,7 +9,7 @@ from src.config import CELL_SIZES_M, FIRST_YEAR, LAST_YEAR, MIN_RADIUS_KM, MAX_R
 from src.extract import extract_cells, ExtractionError
 from src.gee_auth import initialize_earth_engine, EarthEngineAuthError
 from src.index import score_exposure
-from src.model import fit_drivers, InsufficientDriverData
+from src.model import fit_drivers, InsufficientDriverData, predictor_label
 from src.validate import validate_inputs
 
 
@@ -95,23 +95,8 @@ def render_drivers():
         f"Mean absolute SHAP contribution across {len(model.contributions)} cells. "
         "Random forest fitted to Landsat LST using Dynamic World, Sentinel-2 and SRTM."
     )
-    names = {
-        "ndvi": "NDVI",
-        "ndbi": "NDBI",
-        "mndwi": "MNDWI",
-        "elevation_m": "Elevation",
-        "slope_deg": "Slope",
-    }
-    names.update(
-        {
-            key: key.removeprefix("dw_frac_").replace("_", " ").capitalize()
-            + " fraction"
-            for key in model.features
-            if key.startswith("dw_frac_")
-        }
-    )
     st.dataframe(
-        model.importance.rename(index=names)
+        model.importance.rename(index=predictor_label)
         .rename("Mean absolute contribution (°C)")
         .rename_axis("Predictor")
     )
@@ -124,7 +109,7 @@ def render_drivers():
         f"Fitted LST {predicted:.2f} °C · Model baseline {model.baseline_c:.2f} °C"
     )
     st.dataframe(
-        local.rename(index=names)
+        local.rename(index=predictor_label)
         .sort_values(key=abs, ascending=False)
         .rename("Signed contribution (°C)")
         .rename_axis("Predictor")

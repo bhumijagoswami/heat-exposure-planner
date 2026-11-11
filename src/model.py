@@ -23,6 +23,20 @@ MAX_SHAP_CELLS = 2000
 _SEED = 42
 
 
+def predictor_label(name: str) -> str:
+    if name.startswith("dw_frac_"):
+        return (
+            name.removeprefix("dw_frac_").replace("_", " ").capitalize() + " fraction"
+        )
+    return {
+        "ndvi": "NDVI",
+        "ndbi": "NDBI",
+        "mndwi": "MNDWI",
+        "elevation_m": "Elevation",
+        "slope_deg": "Slope",
+    }.get(name, name)
+
+
 class InsufficientDriverData(ValueError):
     """The ROI cannot support a meaningful spatially validated model."""
 
