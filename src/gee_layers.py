@@ -48,6 +48,26 @@ def _nitrogen_dioxide(image):
     )
 
 
+def _no2_composite(collection, request):
+    # Reduce independent years first. Summing observation counts keeps the
+    # overall mean weighted by valid observations even when cloud cover varies.
+    reducer = ee.Reducer.sum().combine(ee.Reducer.count(), sharedInputs=True)
+    bands = ["no2_mol_m2_sum", "no2_mol_m2_count"]
+    partials = []
+    for year in range(request.start_year, request.end_year + 1):
+        images = collection.filterDate(f"{year}-01-01", f"{year + 1}-01-01")
+        partials.append(
+            _with_schema(images.map(_nitrogen_dioxide).reduce(reducer), bands)
+        )
+    totals = ee.ImageCollection.fromImages(partials).sum()
+    count = totals.select(bands[1])
+    mean = totals.select(bands[0]).divide(count).updateMask(count.gt(0))
+    # Keep NO2 on the catalog's 0.01° grid when other bands are reduced at 30 m.
+    return mean.rename("no2_mol_m2").reproject(
+        crs="EPSG:4326", crsTransform=[0.01, 0, -180, 0, -0.01, 90]
+    )
+
+
 def _indices(image):
     clear = image.updateMask(image.select("cs_cdf").gte(0.6))
     # The shared reflectance scale cancels in each normalized difference.
@@ -107,10 +127,16 @@ def build_layers(
     if season not in ("annual", "summer"):
         raise ValueError("Season must be annual or summer.")
 
+    # Catalog bounds filters only need a small enclosing geometry. Keep the ROI at
+    # the antimeridian/poles where a geographic envelope can span every longitude.
+    search_roi = (
+        roi.bounds(1) if abs(request.lon) < 179 and abs(request.lat) < 85 else roi
+    )
+
     def scenes(asset):
         images = (
             ee.ImageCollection(asset)
-            .filterBounds(roi)
+            .filterBounds(search_roi)
             .filterDate(f"{request.start_year}-01-01", f"{request.end_year + 1}-01-01")
         )
         if season == "summer":
@@ -121,13 +147,19 @@ def build_layers(
     l8, l9 = (scenes(asset) for asset in config.LANDSAT_L2)
     thermal = l8.merge(l9).filter(ee.Filter.eq("PROCESSING_LEVEL", "L2SP"))
     lst = _with_schema(thermal.map(_temperature).median(), ["lst_c"])
-    no2 = _with_schema(
-        scenes(config.S5P_NO2).map(_nitrogen_dioxide).mean(), ["no2_mol_m2"]
+    no2 = _no2_composite(scenes(config.S5P_NO2), request)
+    # Match each SR scene to its QA once across the collection.
+    joined = ee.Join.saveFirst("cloud_score").apply(
+        scenes(config.S2_SR),
+        scenes(config.S2_CLOUD_SCORE).select("cs_cdf"),
+        ee.Filter.equals(leftField="system:index", rightField="system:index"),
     )
-    optical = scenes(config.S2_SR).linkCollection(
-        scenes(config.S2_CLOUD_SCORE), ["cs_cdf"]
-    )
-    indices = _with_schema(optical.map(_indices).median(), INDICES)
+
+    def clear_indices(image):
+        return _indices(image.addBands(ee.Image(image.get("cloud_score"))))
+
+    optical = ee.ImageCollection(joined).map(clear_indices)
+    indices = _with_schema(optical.median(), INDICES)
     elevation = ee.Image(config.SRTM).select("elevation")
     layers = ee.Image.cat(
         lst,

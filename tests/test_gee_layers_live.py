@@ -42,3 +42,30 @@ def test_summer_layer_values_at_delhi_point():
     assert sum(values[f"dw_prob_{name}"] for name in DW_CLASSES) == pytest.approx(
         1, abs=0.01
     )
+
+
+@pytest.mark.live
+def test_no2_mean_weights_observations_across_years_with_gaps():
+    from src.gee_layers import _no2_composite
+
+    initialize_earth_engine()
+    images = [
+        ee.Image.constant([column, cloud])
+        .toDouble()
+        .rename(["tropospheric_NO2_column_number_density", "cloud_fraction"])
+        .set("system:time_start", ee.Date(date).millis())
+        for date, column, cloud in [
+            ("2019-01-01", 0.00001, 0),
+            ("2019-02-01", 0.00003, 0),
+            ("2021-01-01", 0.00008, 0),
+            ("2021-02-01", 0.00010, 0.5),
+        ]
+    ]
+    request = validate_inputs(
+        lat=28, lon=77, radius_km=1, cell_size_m=500, start_year=2019, end_year=2021
+    )
+    image = _no2_composite(ee.ImageCollection.fromImages(images), request)
+    result = image.reduceRegion(
+        ee.Reducer.first(), ee.Geometry.Point([77, 28]), 1000
+    ).getInfo()
+    assert result["no2_mol_m2"] == pytest.approx(0.00004)
