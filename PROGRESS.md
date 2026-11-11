@@ -6,7 +6,8 @@
 - Done — M4 metric grid clipped to the circular ROI and batched Earth Engine extraction into a GeoDataFrame.
 - Done — M5 unweighted hazard and population-weighted exposure under four schemes, robust-priority flag and Spearman sensitivity matrix.
 - Done — M6 Drivers screen, random forest for LST, spatial CV metrics, global SHAP importance and signed explanations for every modeled cell.
-- Checks — `make check` passes Ruff, 84 offline tests and Bandit. All six live tests passed on the final run. Run `gitleaks detect --redact` before every milestone commit.
+- Done — M7 Action Plan tab ranks eligible cells by exposure, reports cumulative ROI exposure coverage and estimates bare-to-tree ΔLST with paired bootstrap intervals.
+- Checks — `make check` passes Ruff, 96 offline tests and Bandit. All seven live tests passed in M7. Run `gitleaks detect --redact` before every milestone commit.
 - Setup — Use `uv venv --python 3.12`, then `make install hooks`. The hook requires Gitleaks v8.24.3 on PATH or in `.local/bin`.
 - Decisions — Local project ID comes from `EE_PROJECT` in ignored `.env`. Local initialization delegates credential discovery to the SDK. Deployment accepts EE_SERVICE_ACCOUNT_JSON via environment or a supplied st.secrets mapping.
 - Decisions — Use the 2019–2025 analysis window. Reject grids conservatively using the buffered-circle area bound. Coordinate swaps are detectable only when a value violates its named axis range.
@@ -18,4 +19,6 @@
 - Decisions — Require 150 complete cells and three occupied 2 km blocks. Use up to five held-out folds, pooled R²/RMSE and at most 2,000 seeded cells for mean absolute SHAP. Forests stay in session memory.
 - Live M6 QA — Summer 2023 Delhi Drivers screen: 358 cells, 30 blocks, five folds, R² 0.813 and RMSE 1.06 °C. Launch with `.venv/bin/streamlit run app.py`.
 - Known issue — Full-period live extraction latency varies. M6 QA measured 65.9 s against the 60 s target, then the same test passed in 9.1 s including initialization.
-- Next — Wait for approval before M7 intervention planning.
+- Decisions — Screen cells ≥1 ha with ≥25% combined bare/shrub/grass, zero classified water and <50% built fraction. Rank by selected weighted exposure; the denominator includes all scored cells. Scenario transfers only existing bare cover with other predictors fixed. Use 100 spatial block bootstrap RF refits and 95% percentile intervals.
+- Live M7 QA — Delhi airport area, summer 2023, 25% bare-to-tree conversion: ten sites cover 6.75% of summed exposure. Highest-ranked site ΔLST −0.31 °C (95% bootstrap interval −0.67 to −0.01 °C).
+- Next — Wait for approval before M8 trends.

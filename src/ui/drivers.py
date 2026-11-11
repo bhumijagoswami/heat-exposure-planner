@@ -8,6 +8,7 @@ import streamlit as st
 from src.config import CELL_SIZES_M, FIRST_YEAR, LAST_YEAR, MIN_RADIUS_KM, MAX_RADIUS_KM
 from src.extract import extract_cells, ExtractionError
 from src.gee_auth import initialize_earth_engine, EarthEngineAuthError
+from src.index import score_exposure
 from src.model import fit_drivers, InsufficientDriverData
 from src.validate import validate_inputs
 
@@ -41,6 +42,8 @@ def render_drivers():
             return
         st.session_state.driver_last_run = monotonic()
         st.session_state.pop("driver_result", None)
+        st.session_state.pop("planner_input", None)
+        st.session_state.pop("planner_result", None)
         try:
             request = validate_inputs(
                 lat=lat,
@@ -57,7 +60,10 @@ def render_drivers():
             with st.spinner(
                 "Extracting satellite observations and fitting spatial folds…"
             ):
-                model = fit_drivers(_load_cells(request, season))
+                cells = _load_cells(request, season)
+                scored = score_exposure(cells).cells
+                st.session_state.planner_input = (request, season, scored)
+                model = fit_drivers(cells)
             st.session_state.driver_result = (request, season, model)
         except (InsufficientDriverData, ExtractionError, EarthEngineAuthError) as exc:
             st.warning(str(exc))

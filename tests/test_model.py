@@ -15,6 +15,9 @@ def cells():
         tree = ((11 * i) % 31) / 30
         row = dict.fromkeys(model.FEATURES, 0.0)
         row.update(
+            area_m2=166000.0,
+            coverage_pct=100.0,
+            population=200 + i,
             cell_id=f"cell-{i:03d}",
             dw_frac_trees=tree,
             dw_frac_built=1 - tree,
@@ -101,6 +104,8 @@ def test_drivers_screen(cells, monkeypatch):
         "Spatial CV RMSE (°C)",
     }
     assert len(page.dataframe) == 2
-    page.selectbox[-1].select("cell-150").run()
+    next(widget for widget in page.selectbox if widget.label == "Cell ID").select(
+        "cell-150"
+    ).run()
     assert not page.exception
     assert len(page.dataframe[-1].value) == len(model.FEATURES)
