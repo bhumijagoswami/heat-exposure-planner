@@ -137,7 +137,7 @@ def build_report(
             + ".",
         ]
     plan = ["No scored cells met the planting criteria."]
-    selection = sites[["cumulative_exposure_pct"]].copy()
+    selection = sites[["cumulative_exposure_pct", "land_use_review"]].copy()
     selection["planner_rank"] = pd.array(range(1, len(sites) + 1), dtype="Int64")
     if not sites.empty:
         first = sites.index[0]
@@ -148,7 +148,7 @@ def build_report(
             else "Exposure coverage is undefined because the total score is zero."
         )
         plan = [
-            f"The selected list contains {len(sites)} planting sites. {zones.at[first, 'Zone']} ranks first. {share}"
+            f"The selected list contains {len(sites)} planting sites. {zones.at[first, 'Zone']} ranks first. Land-use check: {sites.at[first, 'land_use_review']}. {share}"
         ]
         if scenario is None:
             plan.append(

@@ -150,6 +150,7 @@ class Trend:
     slope_per_year: float | None
     p_value: float | None
     note: str
+    low_weight_2020: int | None = None
 
 
 def analyze_trend(observations: pd.Series) -> Trend:
@@ -175,11 +176,13 @@ def analyze_trend(observations: pd.Series) -> Trend:
             "Seasonal fit needs at least 80% coverage and gaps of at most two months.",
         )
     filled = span.interpolate()
-    seasonal = STL(filled, period=12, robust=True).fit().seasonal
-    adjusted.loc[span.index] = span - seasonal
+    fit = STL(filled, period=12, robust=True).fit()
+    adjusted.loc[span.index] = span - fit.seasonal
+    in_2020 = span.notna() & (span.index.year == 2020)
+    low_weight = int((fit.weights[in_2020] < 0.5).sum()) if in_2020.any() else None
     values = adjusted.dropna()
     if np.ptp(values) <= 1e-12:
-        return Trend(adjusted, 0.0, 1.0, "")
+        return Trend(adjusted, 0.0, 1.0, "", low_weight)
     years = (
         values.index.to_period("M").asi8 - values.index[0].to_period("M").ordinal
     ) / 12
@@ -188,6 +191,7 @@ def analyze_trend(observations: pd.Series) -> Trend:
         float(theilslopes(values, years).slope),
         float(mk.original_test(values).p),
         "",
+        low_weight,
     )
 
 

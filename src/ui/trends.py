@@ -6,7 +6,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from src.zones import NO2_TO_MICROMOLES
+from src.zones import NO2_RESOLUTION_NOTE, NO2_TO_MICROMOLES
 
 from .limits import begin_compute
 
@@ -165,6 +165,7 @@ def render_trends(offline=False):
     factor = NO2_TO_MICROMOLES if metric == "no2" else 1
     if metric == "no2":
         unit = "µmol/m²"
+        st.caption(NO2_RESOLUTION_NOTE)
     source = "Sentinel-5P OFFL" if metric == "no2" else "Terra MODIS MOD11A2"
     st.caption(
         f"{request.lat:.4f}°, {request.lon:.4f}° · {request.radius_km:g} km · "
@@ -209,6 +210,12 @@ def render_trends(offline=False):
     st.caption(
         f"Observed monthly readings ranged from {obs.min() * factor:.3g} to {obs.max() * factor:.3g} {unit}."
     )
+    if metric == "no2" and trend.low_weight_2020 is not None:
+        st.caption(
+            f"The seasonal fit gave low weight to {trend.low_weight_2020} observed months in 2020. "
+            "The adjusted line subtracts the fitted seasonal cycle from each reading, so unusual months can still stand out. "
+            "With only a few annual cycles, other years can look nearly flat. The chart alone cannot attribute changes to lockdown."
+        )
     rolling = rolling_comparison(monthly, metric) * factor
     if rolling.notna().any().any():
         _chart(

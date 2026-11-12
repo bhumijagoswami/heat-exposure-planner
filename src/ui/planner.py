@@ -39,6 +39,9 @@ def render_planner():
     st.caption(
         "Cumulative coverage is the share of summed hotspot scores across all scored cells in the area."
     )
+    st.warning(
+        "These are candidates for review. Satellite cover can classify runway verges, road reserves and other restricted land as grass or bare soil. Confirm land use and permission before planning any planting."
+    )
     zones = zone_directory(cells)
     display_sites = zones.loc[sites.index].join(sites)
     display_sites["Level"] = display_sites.exposure.map(hotspot_level)
@@ -46,10 +49,11 @@ def render_planner():
     st.dataframe(
         display_sites.rename(
             columns={
+                "land_use_review": "Land-use review",
                 "area_m2": "Cell area (m²)",
                 "dw_frac_bare": "Bare fraction",
                 "dw_frac_trees": "Tree fraction",
-                "open_fraction": "Plantable cover fraction",
+                "open_fraction": "Open cover fraction",
                 "exposure": "Hotspot score",
                 "cumulative_exposure_pct": "Cumulative exposure covered (%)",
             }

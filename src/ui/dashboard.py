@@ -6,7 +6,12 @@ import pandas as pd
 import streamlit as st
 from shapely.geometry import mapping
 
-from src.zones import NO2_TO_MICROMOLES, hotspot_level, zone_directory
+from src.zones import (
+    NO2_RESOLUTION_NOTE,
+    NO2_TO_MICROMOLES,
+    hotspot_level,
+    zone_directory,
+)
 from src.demo import PRESETS, load_demo
 from src.index import score_exposure
 from src.model import fit_drivers
@@ -231,6 +236,8 @@ def render_map():
     st.caption("Select a zone on the map to inspect its observations.")
     basemap = st.radio("Basemap", ["OpenStreetMap", "Satellite"], horizontal=True)
     field, unit, source = LAYERS[layer]
+    if field == "no2_mol_m2":
+        st.caption(NO2_RESOLUTION_NOTE)
     render_grid_map(cells, field, unit, basemap)
     _map_takeaway(cells, field, unit)
     st.caption(

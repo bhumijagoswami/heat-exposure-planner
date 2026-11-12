@@ -93,16 +93,16 @@ def test_trends_screen(monkeypatch):
         button for button in page.button if button.label == "Load monthly trends"
     ).click().run()
     assert not page.exception
-    assert next(m for m in page.metric if m.label == "Estimated yearly change").value.endswith(
-        "°C/year"
-    )
+    assert next(
+        m for m in page.metric if m.label == "Estimated yearly change"
+    ).value.endswith("°C/year")
     assert any("2020" in cap.value for cap in page.caption)
     assert len(page.get("vega_lite_chart")) == 2
     next(w for w in page.selectbox if w.label == "Measurement").select("no2").run()
     assert not page.exception
-    assert next(m for m in page.metric if m.label == "Estimated yearly change").value.endswith(
-        "µmol/m²/year"
-    )
+    assert next(
+        m for m in page.metric if m.label == "Estimated yearly change"
+    ).value.endswith("µmol/m²/year")
 
 
 @pytest.mark.parametrize("failure", [None, "missing", "duplicate", "service"])
@@ -140,3 +140,17 @@ def test_monthly_batch_integrity(monkeypatch, failure):
         assert monthly.roi_no2.eq(-0.00001).all()
         assert monthly.green_day_c.isna().all()
     assert sdk.FeatureCollection.call_count == 2
+
+
+def test_demo_no2_seasonal_fit_downweights_2020():
+    from src.demo import PRESETS, load_demo
+
+    for name in PRESETS:
+        _, _, monthly = load_demo(name)
+        observed = monthly.roi_no2
+        result = trends.analyze_trend(observed)
+        assert observed.count() == 36 and result.low_weight_2020 == 12
+        spans = result.adjusted.groupby(result.adjusted.index.year).agg(
+            lambda s: s.max() - s.min()
+        )
+        assert spans[2020] > max(spans[2019], spans[2021])

@@ -151,3 +151,18 @@ def test_small_area_keeps_site_ranking_in_app(monkeypatch):
     assert len(page.tabs[4].dataframe) == 1
     assert "Cumulative exposure covered (%)" in page.tabs[4].dataframe[0].value
     assert any("require a fitted driver model" in info.value for info in page.info)
+
+
+def test_airport_district_and_mixed_use_flags():
+    import geopandas as gpd
+    from shapely.geometry import Point
+
+    rows = candidates().iloc[:2].copy()
+    rows.iloc[1, rows.columns.get_loc("dw_frac_trees")] -= 0.1
+    rows.iloc[1, rows.columns.get_loc("dw_frac_crops")] = 0.1
+    cells = gpd.GeoDataFrame(
+        rows, geometry=[Point(77.10, 28.55), Point(77.59, 12.97)], crs=4326
+    )
+    flags = planner.rank_sites(cells).land_use_review
+    assert "Airport district" in flags["h"]
+    assert "Airport district" not in flags["g"] and "crops" in flags["g"]

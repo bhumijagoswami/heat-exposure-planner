@@ -2,6 +2,7 @@
 
 import pandas as pd
 
+NO2_RESOLUTION_NOTE = "NO₂ is the amount in the air column above each square metre. The satellite footprint spans several kilometres, so nearby zones can share a reading. Street-level differences cannot be resolved."
 NO2_TO_MICROMOLES = 1_000_000
 
 

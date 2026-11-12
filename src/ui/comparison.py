@@ -11,7 +11,7 @@ from src.ui.drivers import _load_cells
 from src.ui.limits import begin_compute
 from src.ui.trends import _chart, _load_monthly
 from src.validate import validate_inputs
-from src.zones import NO2_TO_MICROMOLES
+from src.zones import NO2_RESOLUTION_NOTE, NO2_TO_MICROMOLES
 
 CUSTOM = "Custom coordinates"
 MEASURES = {
@@ -130,6 +130,7 @@ def _charts(pair):
     st.caption(
         "Sources · Landsat, Sentinel-5P, Sentinel-2 and WorldPop. Priority uses each area's own rankings. The population denominator includes all known residents."
     )
+    st.caption(NO2_RESOLUTION_NOTE)
     cover = pd.DataFrame(
         {
             name: {
