@@ -9,6 +9,7 @@ from shapely.geometry import mapping
 from src.demo import PRESETS, load_demo
 from src.index import score_exposure
 from src.model import fit_drivers
+from src.ui.basemap import render_grid_map
 from src.ui.drivers import render_area_form
 
 LIVE = "Custom live analysis"
@@ -28,6 +29,7 @@ LAYERS = {
         "NO₂ (mol/m²)",
         "Sentinel-5P OFFL · tropospheric column",
     ),
+    "Greenness": ("ndvi", "NDVI (−1 to 1)", "Sentinel-2 · vegetation index"),
     "Robust priority": (
         "robust_priority",
         "Priority",
@@ -52,7 +54,6 @@ def select_area():
                 "driver_result",
                 "planner_result",
                 "trends_result",
-                "selected_map_cell",
                 "plan_scheme",
                 "plan_count",
                 "plan_percent",
@@ -79,7 +80,7 @@ def select_area():
     return name
 
 
-def _cell_chart(cells, layer, interactive):
+def _cell_chart(cells, layer):
     field, unit, source = LAYERS[layer]
     records = []
     categorical = field == "robust_priority"
@@ -130,18 +131,7 @@ def _cell_chart(cells, layer, interactive):
     chart = chart.project(type="identity", reflectY=True).properties(
         title=layer, height=385
     )
-    if interactive:
-        pick = alt.selection_point(
-            name="picked", fields=["cell_id"], on="click", toggle=False
-        )
-        event = st.altair_chart(
-            chart.add_params(pick), width="stretch", on_select="rerun", key="cell_map"
-        )
-        selection = event.selection.get("picked", [])
-        if selection and selection[0].get("cell_id") in set(cells.cell_id):
-            st.session_state.selected_map_cell = selection[0]["cell_id"]
-    else:
-        st.altair_chart(chart, width="stretch")
+    st.altair_chart(chart, width="stretch")
     st.caption(f"{source}. Gray cells have insufficient data.")
 
 
@@ -180,7 +170,7 @@ def render_overview(name):
     )
     map_col, table_col = st.columns([1.1, 1], gap="medium")
     with map_col.container(border=True):
-        _cell_chart(cells, "Population-weighted exposure", False)
+        _cell_chart(cells, "Population-weighted exposure")
     with table_col.container(border=True):
         st.subheader("Highest exposure")
         top = (
@@ -219,20 +209,12 @@ def render_map():
     cells = active[2]
     layer = st.selectbox("Map layer", list(LAYERS))
     st.caption("Select a cell on the map to inspect its observations.")
-    _cell_chart(cells, layer, True)
-    key = st.session_state.get("selected_map_cell")
-    detail = cells[cells.cell_id == key]
-    if not detail.empty:
-        row = detail.iloc[0]
-        st.subheader(f"Cell {key}")
-        for col, field, label, fmt in zip(
-            st.columns(3),
-            ["lst_c", "no2_mol_m2", "exposure_equal"],
-            ["Surface temperature (°C)", "NO₂ (mol/m²)", "Exposure score"],
-            [".1f", ".3g", ".3f"],
-            strict=True,
-        ):
-            col.metric(label, format(row[field], fmt) if pd.notna(row[field]) else "—")
+    basemap = st.radio("Basemap", ["OpenStreetMap", "Satellite"], horizontal=True)
+    field, unit, source = LAYERS[layer]
+    render_grid_map(cells, field, unit, basemap)
+    st.caption(
+        f"{source}. Gray means insufficient data. Background imagery requires internet."
+    )
 
 
 def render_methodology():

@@ -28,8 +28,8 @@ def test_switch_presets_and_layers_without_earth_engine(monkeypatch):
     page = AppTest.from_file("../app.py", default_timeout=30).run()
     assert not page.exception
     assert [t.label for t in page.tabs] == [
-        "Overview",
         "Map",
+        "Overview",
         "Drivers",
         "Trends",
         "Action Plan",

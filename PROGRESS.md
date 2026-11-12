@@ -35,3 +35,4 @@
 - Live M11 QA — All ten live tests passed, including default Delhi timing and a Pacific ocean ROI. Tested 90-second socket timeout configuration, two SDK retries with backoff, cache isolation and hostile inputs offline. Full history and local QA logs scanned clean.
 - Release QA — Ten live tests passed. Python 3.12 Linux wheel resolution passed with required hashes. Hosted secrets, missing secrets and malformed configuration are covered offline.
 - Handoff — Deployment instructions are in README.md. Rotate any deployment service-account key after grading using SECURITY.md.
+- UI step 1 — Map opens first with OSM/Esri imagery, five selectable grid layers, legend and click details. Dashboard tests and offline Chrome interaction checks passed; live tile delivery unverified.

@@ -18,10 +18,10 @@ st.set_page_config(page_title="Heat & air pollution exposure planner", layout="w
 st.html(Path(__file__).parent / "src/ui/theme.css")
 source = select_area()
 st.title("Heat & air pollution exposure planner")
-overview, grid, drivers, trends, planner, report, methods = st.tabs(
+grid, overview, drivers, trends, planner, report, methods = st.tabs(
     [
-        "Overview",
         "Map",
+        "Overview",
         "Drivers",
         "Trends",
         "Action Plan",
