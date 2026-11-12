@@ -140,7 +140,8 @@ def build_layers(
             .filterDate(f"{request.start_year}-01-01", f"{request.end_year + 1}-01-01")
         )
         if season == "summer":
-            start, end = (6, 8) if request.lat >= 0 else (12, 2)
+            months = config.summer_months(request.lat)
+            start, end = months[0], months[-1]
             images = images.filter(ee.Filter.calendarRange(start, end, "month"))
         return images
 

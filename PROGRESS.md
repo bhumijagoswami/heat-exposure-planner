@@ -1,5 +1,5 @@
 # Progress
-- Current redesign — Step 1 shared tile map implemented and tested (2 targeted tests). Next: Place story, then Compare/About and central Delhi snapshot. Live tiles and browser interaction pending.
+- Current redesign — Step 2 Place story uses ranked markers, action cards, land-cover heat and 36 monthly readings. The single live central Delhi extraction returned 353 zones and 36 months for step 3.
 - Done — M1 scaffold on `dev`, Python 3.12 venv, hash-locked development dependencies, credential exclusions, local Git hook and security notes.
 - Done — M2 SDK initialization with local login or deployment secrets, validated analysis inputs, offline tests and opt-in live smoke test.
 - Done — M3 lazy annual/summer composites for LST, NO₂, optical indices, Dynamic World, terrain and population.

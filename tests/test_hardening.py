@@ -86,7 +86,7 @@ def test_cross_tab_cooldown_and_redaction(monkeypatch, caplog):
     area_call = Mock(side_effect=RuntimeError(marker))
     monkeypatch.setattr(drivers, "_load_cells", area_call)
     page = AppTest.from_file("../app.py", default_timeout=30).run()
-    page.selectbox[0].select("Custom live analysis").run()
+    page.checkbox[0].check().run()
 
     def click(label):
         next(button for button in page.button if button.label == label).click().run()

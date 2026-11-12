@@ -11,17 +11,16 @@ def test_bundled_snapshots(name):
     assert cells.lst_c.notna().any() and cells.population.sum() > 0
 
 
-def test_story_and_comparison():
+def test_story():
     from streamlit.testing.v1 import AppTest
 
-    app = AppTest.from_file("../app.py", default_timeout=60).run()
+    app = AppTest.from_file("../app.py",default_timeout=30).run()
+    app.selectbox[0].select("Bengaluru · central district").run()
     assert not app.exception
     assert len(app.metric) == 3
-    assert any("What to do first" == item.value for item in app.subheader)
-    assert len([item for item in app.markdown if "maps/search" in item.value]) == 5
-    app.radio[0].set_value("Compare two places").run()
-    assert not app.exception
-    assert len(app.metric) == 6
+    assert len(app.get("iframe")) == 1
+    assert sum("Monthly area averages" in c.value for c in app.caption) == 2
+    assert any("5 zones to check first" == item.value for item in app.subheader)
 
 
 def test_compare_custom_place_with_missing_observations(monkeypatch):

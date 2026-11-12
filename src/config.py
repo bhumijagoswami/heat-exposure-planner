@@ -25,3 +25,7 @@ EE_MAX_RETRIES = 2
 COOLDOWN_SECONDS = 10
 CACHE_TTL_SECONDS = 86400
 CACHE_MAX_ENTRIES = 50
+
+
+def summer_months(latitude):
+    return (6, 7, 8) if latitude >= 0 else (12, 1, 2)
