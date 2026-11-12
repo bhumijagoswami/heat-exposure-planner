@@ -52,15 +52,18 @@ def land_chart(place):
     st.subheader(
         f"{top['Land type']} ran {abs(top.Difference):.1f} °C {'hotter' if top.Difference >= 0 else 'cooler'} than average"
     )
-    data["Label"] = [
-        f"{v:+.1f} ({n} zones)" for v, n in zip(data.Difference, data.Zones)
+    data["Group"] = [
+        f"{name} ({n} zones)" for name, n in zip(data["Land type"], data.Zones)
     ]
+    data["Label"] = data.Difference.map("{:+.1f}".format)
+    extent = max(0.5, data.Difference.abs().max() * 1.3)
     base = alt.Chart(data).encode(
-        y=alt.Y("Land type:N", sort="-x", title=None),
+        y=alt.Y("Group:N", sort="-x", title=None),
         x=alt.X(
             "Difference:Q",
             title="Difference from area average (°C)",
             axis=alt.Axis(format="+.1f"),
+            scale=alt.Scale(domain=[-extent, extent]),
         ),
     )
     bars = base.mark_bar().encode(
@@ -130,7 +133,7 @@ def render_story():
     if reference > 0 and pd.notna(value):
         gap = 100 * (value / reference - 1)
         st.info(
-            f"Air pollution: satellite NO₂ over this area is {abs(gap):.0f}% {'higher' if gap >= 0 else 'lower'} than {other}. NO₂ comes mostly from traffic and industry, so traffic and emission measures are the first priority."
+            f"Air pollution: satellite NO₂ over this area is {abs(gap):.0f}% {'higher' if gap >= 0 else 'lower'} than {other}. NO₂ comes mostly from traffic and industry, so trees alone cannot fix it; traffic and emission measures come first."
         )
     else:
         st.caption("There are insufficient observations to compare air pollution.")

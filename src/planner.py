@@ -8,7 +8,6 @@ import pandas as pd
 from shapely.geometry import Point
 from sklearn.base import clone
 
-from .demo import PRESETS
 from .extract import FRACTIONS
 from .model import DriverModel
 
@@ -30,7 +29,7 @@ def _land_use_flags(data):
     flags.loc[mixed] += " · crops, wetland or snow/ice present"
     if isinstance(data, gpd.GeoDataFrame) and not data.empty:
         # Flag the whole known airport study district; this is not a surveyed airfield boundary.
-        _, lat, lon = PRESETS["Delhi · airport district"]
+        lat, lon = 28.55, 77.10
         district = (
             gpd.GeoSeries([Point(lon, lat)], crs=4326)
             .to_crs(32643)

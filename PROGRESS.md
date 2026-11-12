@@ -1,5 +1,5 @@
 # Progress
-- Current redesign — Step 2 Place story uses ranked markers, action cards, land-cover heat and 36 monthly readings. The single live central Delhi extraction returned 353 zones and 36 months for step 3.
+- Current redesign — Completed story, shared street/satellite map, Compare, About and central Delhi cache (353 zones, 36 months). Chrome marker/popup/toggle checks passed.
 - Done — M1 scaffold on `dev`, Python 3.12 venv, hash-locked development dependencies, credential exclusions, local Git hook and security notes.
 - Done — M2 SDK initialization with local login or deployment secrets, validated analysis inputs, offline tests and opt-in live smoke test.
 - Done — M3 lazy annual/summer composites for LST, NO₂, optical indices, Dynamic World, terrain and population.
@@ -12,7 +12,7 @@
 - Done — M10 responsive seven-tab dashboard, overview KPIs, selectable four-layer map, methodology and offline Delhi/Bengaluru presets.
 - Done — M11 shared session cooldown, bounded Earth Engine transport, safe retry/error logs and offline/live failure-path QA.
 - Done — M12 README, desktop/mobile screenshots, architecture and methodology, Community Cloud setup, and a ten-question viva guide.
-- Redesign QA — Final make check passed Ruff, 111 offline tests and Bandit; eight live tests excluded. Browser layout and live Earth Engine requests were not reverified.
+- Redesign QA — make check: 113 passed, 8 live deselected; Ruff/Bandit clean. Central Delhi summer Landsat 40.5 °C vs MODIS 33.0 °C (6 observed months). Bengaluru difference 1.4 °C (3 months).
 - Setup — Use `uv venv --python 3.12`, then `make install hooks`. The hook requires Gitleaks v8.24.3 on PATH or in `.local/bin`.
 - Decisions — Local project ID comes from `EE_PROJECT` in ignored `.env`. Local initialization delegates credential discovery to the SDK. Deployment accepts EE_SERVICE_ACCOUNT_JSON via environment or a supplied st.secrets mapping.
 - Decisions — Use the 2019–2025 analysis window. Reject grids conservatively using the buffered-circle area bound. Coordinate swaps are detectable only when a value violates its named axis range.

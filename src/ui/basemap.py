@@ -103,8 +103,8 @@ def render_map(cells, *, caption, layer=None, keys=()):
             .fillna(4)
             .astype(int)
         )
-        labels = ["30 or less–<35", "35–<40", "40–<45", "45–50 or more", "No data"]
-        legend = "Surface temperature (°C)"
+        labels = ["Below 35", "35–under 40", "40–under 45", "45 and above", "No data"]
+        legend = "Surface temperature (°C) · shared 30–50 scale"
     else:
         bands = relative_bands(indexed, LAYERS[layer])
         labels = ["Low", "Moderate", "High", "Very high", "No data"]

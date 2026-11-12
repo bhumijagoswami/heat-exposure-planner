@@ -1,4 +1,4 @@
-"""Streamlit controls and results for the LST driver analysis."""
+"""Cached live observations and Earth Engine initialization."""
 
 from src.monthly import fetch_monthly
 

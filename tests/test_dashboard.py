@@ -14,7 +14,7 @@ def test_bundled_snapshots(name):
 def test_story():
     from streamlit.testing.v1 import AppTest
 
-    app = AppTest.from_file("../app.py",default_timeout=30).run()
+    app = AppTest.from_file("../app.py", default_timeout=30).run()
     app.selectbox[0].select("Bengaluru · central district").run()
     assert not app.exception
     assert len(app.metric) == 3
@@ -25,21 +25,25 @@ def test_story():
 
 def test_compare_custom_place_with_missing_observations(monkeypatch):
     from streamlit.testing.v1 import AppTest
-    from src.ui import comparison
+    from src.ui import drivers
+    from src.ui.places import preset
 
-    _, cells = load_demo(next(iter(PRESETS)))
+    saved = preset(next(iter(PRESETS)))
     calls = []
 
     def load(request, season):
         calls.append((request, season))
-        return cells.assign(lst_c=float("nan"))
+        return saved.cells.assign(lst_c=float("nan"))
 
-    monkeypatch.setattr(comparison, "_load_cells", load)
-    page = AppTest.from_string(
-        "from src.ui.comparison import render_comparison\nrender_comparison()"
-    ).run()
-    page.selectbox[1].select(comparison.CUSTOM).run()
+    monkeypatch.setattr(drivers, "_load_cells", load)
+    monkeypatch.setattr(drivers, "_load_monthly", lambda request: saved.months)
+    page = AppTest.from_file("../app.py").run()
+    page.radio[0].set_value("Compare two places").run()
+    assert not page.exception and len(page.get("iframe")) == 2
+    assert any("7.5 °C apart" in item.value for item in page.caption)
+    assert page.table[0].value.shape == (6, 2)
+    page.checkbox[1].check().run()
     page.button[0].click().run()
     assert not page.exception
     assert calls[0][0].start_year == 2019 and calls[0][1] == "summer"
-    assert any(item.value == "No readings" for item in page.metric)
+    assert "No readings" in page.table[0].value.iloc[0].tolist()

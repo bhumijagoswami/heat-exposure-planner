@@ -1,6 +1,6 @@
 # Compound Heat & Air Pollution Exposure Planner
 
-Choose a place to see how many zones combine high surface heat, pollution, limited greenery and residential exposure. Follow the numbered map to five sites worth checking for tree planting, or compare two places over the same summer window.
+Choose a place to see how many zones combine high surface heat, pollution, limited greenery and residential exposure. Follow the numbered map to five separated hotspots with shade, roof or shelter actions, or compare two places over the same summer window.
 
 ## Run from a fresh clone
 
@@ -27,7 +27,7 @@ Prerequisites on macOS or Linux are Git, Make, uv and Python 3.12. The first ins
    .venv/bin/streamlit run app.py
    ```
 
-Open the **Local URL** printed by Streamlit. The Delhi and Bengaluru presets contain 353 and 355 zones respectively, using a 5 km radius and 500 m grid. Both use summer readings from 2019–2021. [Snapshot sources](data/demo/SOURCES.md)
+Open the **Local URL** printed by Streamlit. The central Delhi (28.62° N, 77.23° E) and central Bengaluru (12.97° N, 77.59° E) presets contain 353 and 355 zones respectively, using a 5 km radius and 500 m grid. Both use summer readings from 2019–2021. [Snapshot sources](data/demo/SOURCES.md)
 
 ## Live Earth Engine analysis
 
@@ -37,13 +37,17 @@ Use a Cloud project registered for Earth Engine, with the Earth Engine API enabl
 cp -n .env.example .env
 ```
 
-The SDK reuses an existing Earth Engine login. For a first login, run `.venv/bin/earthengine authenticate` interactively. Restart the app after changing the project or credentials. Select **Custom live analysis**, enter latitude and longitude in degrees, choose a 1–15 km radius, a 250/500/1000 m cell size, years within 2019–2025 and a season. Click **Analyze area**. [Authentication guide](https://developers.google.com/earth-engine/guides/auth)
+The SDK reuses an existing Earth Engine login. For a first login, run `.venv/bin/earthengine authenticate` interactively. Restart the app after changing the project or credentials. Open **Custom coordinates**, enable it and enter a latitude and longitude. The story accepts a 1–15 km radius; Compare fixes both radii at 5 km. Click **Analyze area**. [Authentication guide](https://developers.google.com/earth-engine/guides/auth)
 
 ## How to read the results
 
-The answer card counts zones scoring at least 0.75 and sums their estimated residents. The map uses four equal-width score bands. Its numbers identify up to ten eligible planting sites in descending exposure order. The first five match the action list. A high-exposure zone may contain too much built land or water to qualify.
+The answer card sums estimated residents in the highest tenth of zones by equal-weight overall risk. Story colours run from blue (bottom 40%) through pale yellow (next 30%) and orange (next 20%) to dark red (highest 10%). Tree cover reverses direction so less greenery means greater concern. Grey marks missing readings. Dark numbered markers select the highest-risk zones greedily, at least 1 km apart, after excluding available airfield or restricted flags. The flags are incomplete. Tiles require internet access; the observations, shapes and charts are bundled.
 
-The temperature chart compares area-weighted surface readings in the lower and upper tree-cover quartiles. Ties stay together. When both thresholds coincide, the upper group contains only zones above the threshold. Compare uses physical measurements from matched periods because exposure ranks are local to each place.
+Each zone’s dominant Dynamic World class determines its group in the land-type chart. Bars show the group’s area-weighted surface temperature minus the local average, with at least five measured zones per bar. Monthly lines keep missing months as gaps and shade 2020 for context. Area-wide NO₂ is too coarse to guide individual street interventions.
+
+Compare uses June, July and August 2019–2021 for both presets, with the same Landsat quality mask, Sentinel-2 cloud filtering and Sentinel-5P cloud threshold. Both maps use the same 30–50 °C colour scale. The hottest-tenth gap measures local heat contrast. The share above 40 °C uses residents in zones with valid temperature and population.
+
+The central Delhi Landsat summer average was 40.5 °C versus 33.0 °C across six available MODIS summer months (7.5 °C apart). Bengaluru averaged 33.7 °C versus 32.4 °C across three available months. Missing observations, spatial resolution and overpass timing affect the comparison.
 
 ### Data and scoring
 
@@ -66,7 +70,7 @@ The earlier monthly view used MODIS surface temperature and Sentinel-5P NO₂. R
 
 ## Architecture and operating limits
 
-Streamlit routes between the place story and Compare. Both use the same bundled observations or validated live extraction. The story scores zones, screens land cover and estimates the temperature change from converting bare ground to trees.
+Streamlit routes between the place story and Compare. Both use the same bundled observations or validated live extraction. Place story ranks zones, and About offers the planting model with held-out spatial validation.
 
 Live runs are capped at 2,500 cells and use batches of at most 500. A smaller radius or larger cell size can bring an oversized request within budget. Results are cached for 24 hours, with up to 50 entries per live data cache. Compute actions share a 10-second session cooldown. Earth Engine API sockets have a 90-second inactivity timeout and allow two SDK retries with backoff. Backend load can push extraction beyond the one-minute target. Monitor project quota when serving concurrent users. [Security and quota notes](SECURITY.md)
 

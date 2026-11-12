@@ -8,7 +8,7 @@ from .validate import validate_inputs
 
 DEMO_DIR = Path(__file__).resolve().parents[1] / "data" / "demo"
 PRESETS = {
-    "Delhi · airport district": ("delhi", 28.55, 77.10),
+    "Delhi · central": ("central_delhi", 28.62, 77.23),
     "Bengaluru · central district": ("bengaluru", 12.97, 77.59),
 }
 

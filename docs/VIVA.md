@@ -1,6 +1,6 @@
 # Viva guide
 
-The place story uses equal weights, observed temperatures by tree cover and five planting scenarios. Questions 2, 5–7 and 9 also cover methods from the earlier expert dashboard.
+Place story uses equal weights, observed temperatures by dominant land type, and five hotspot actions. The cooling scenario and held-out neighbourhood checks are in About. Questions 2, 5–7 and 9 also cover methods from the earlier expert dashboard.
 
 1. **What does a high exposure score mean?** A cell combines relatively high heat, NO₂ or green deficit with a relatively high residential population rank. Ranks are recalculated for the selected area and time window. The score is a screening measure, with no physical dose unit.
 
@@ -20,4 +20,6 @@ The place story uses equal weights, observed temperatures by tree cover and five
 
 9. **How are seasonality, missing months and lockdown handled?** STL estimates the annual seasonal cycle. Short interior gaps can support STL fitting, while Sen’s slope and Mann–Kendall use observed deseasonalized months. Slopes are annualized using calendar spacing. Shading marks 2020 as context; lockdown timing varied, and the analysis does not estimate its causal effect.
 
-10. **What can you demonstrate if Earth Engine is unavailable?** Both city presets contain satellite-derived observations in Parquet. The story, numbered map, tree-cover comparison, planting estimates and two-place comparison work offline after installation. Live requests add authentication, input and grid limits, bounded batches, cache limits, a shared cooldown and bounded retries. WorldPop’s fixed 2020 baseline and variable live latency remain limitations.
+10. **What can you demonstrate if Earth Engine is unavailable?** Both city presets contain satellite-derived observations in Parquet. The story, numbered map, land-type and monthly charts, planting estimates and two-place comparison work offline after installation. Live requests add authentication, input and grid limits, bounded batches, cache limits, a shared cooldown and bounded retries. WorldPop’s fixed 2020 baseline and variable live latency remain limitations.
+
+**Why compare the hottest tenth with its own area?** Central Delhi and Bengaluru have different climates. Subtracting each place’s average highlights local contrast. Compare also checks Landsat against MODIS in the same summer months; central Delhi differed by 7.5 °C with six valid MODIS months.

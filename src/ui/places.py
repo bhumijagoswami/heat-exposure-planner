@@ -180,5 +180,5 @@ def monthly_line(places, field):
     )
     st.altair_chart(year + line, width="stretch")
     st.caption(
-        f"Monthly area averages · {'MODIS · ' + HEAT if heat else 'Sentinel-5P · ' + AIR} · January 2019–December 2021 · shaded: Lockdown year: pollution fell sharply."
+        f"Monthly area averages · {'MODIS · ' + HEAT if heat else 'Sentinel-5P · ' + AIR} · January 2019–December 2021 · shaded 2020: Lockdown year: pollution fell sharply."
     )
