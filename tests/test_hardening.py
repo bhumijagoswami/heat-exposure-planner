@@ -10,7 +10,7 @@ import pytest
 from googleapiclient.http import HttpRequest
 from streamlit.testing.v1 import AppTest
 
-from src import extract, gee_auth, trends
+from src import extract, gee_auth
 from src.config import EE_MAX_RETRIES, EE_TIMEOUT_SECONDS
 from src.validate import validate_inputs
 
@@ -79,17 +79,14 @@ def test_real_sdk_retry_budget_and_safe_diagnostics(
 
 def test_cross_tab_cooldown_and_redaction(monkeypatch, caplog):
     from src.ui import drivers, limits
-    from src.ui import trends as ui_trends
 
     marker = "PRIVATE_DIAGNOSTIC_MARKER"
     clock = Mock(return_value=100.0)
     monkeypatch.setattr(limits, "monotonic", clock)
     area_call = Mock(side_effect=RuntimeError(marker))
-    trend_call = Mock(side_effect=RuntimeError(marker))
     monkeypatch.setattr(drivers, "_load_cells", area_call)
-    monkeypatch.setattr(ui_trends, "_load_monthly", trend_call)
     page = AppTest.from_file("../app.py", default_timeout=30).run()
-    page.sidebar.selectbox[0].select("Custom live analysis").run()
+    page.selectbox[0].select("Custom live analysis").run()
 
     def click(label):
         next(button for button in page.button if button.label == label).click().run()
@@ -99,12 +96,12 @@ def test_cross_tab_cooldown_and_redaction(monkeypatch, caplog):
     click("Analyze area")
     area_call.assert_called_once()
     clock.return_value = 109.9
-    click("Load monthly trends")
-    trend_call.assert_not_called()
+    click("Analyze area")
+    area_call.assert_called_once()
     assert any("10 seconds" in w.value for w in page.warning)
     clock.return_value = 110.0
-    click("Load monthly trends")
-    trend_call.assert_called_once()
+    click("Analyze area")
+    assert area_call.call_count == 2
     assert "RuntimeError" in caplog.text
     assert marker not in caplog.text
 
@@ -143,29 +140,19 @@ def test_hostile_direct_request_stops_before_earth_engine(monkeypatch, changes):
         pytest.fail("Invalid inputs reached the Earth Engine SDK")
 
     monkeypatch.setattr(extract, "_polygon", forbidden)
-    monkeypatch.setattr(trends, "_polygon", forbidden)
-    for operation in (extract.extract_cells, trends.fetch_monthly):
-        with pytest.raises(ValueError):
-            operation(request)
+    with pytest.raises(ValueError):
+        extract.extract_cells(request)
 
 
-@pytest.mark.parametrize("operation", ["cells", "months"])
-def test_user_facing_timeout_is_actionable_and_redacted(monkeypatch, caplog, operation):
+def test_user_facing_timeout_is_actionable_and_redacted(monkeypatch, caplog):
     import traceback
 
     request = validate_inputs(lat=0, lon=0, radius_km=1, cell_size_m=500)
     fault = TimeoutError("PRIVATE_TIMEOUT_MARKER")
-    if operation == "cells":
-        monkeypatch.setattr(extract, "_polygon", Mock())
-        monkeypatch.setattr(extract, "build_layers", Mock())
-        monkeypatch.setattr(extract, "_reduce_batch", Mock(side_effect=fault))
-        run, error = extract.extract_cells, extract.ExtractionError
-    else:
-        monkeypatch.setattr(trends, "_monthly_features", Mock())
-        sdk = Mock()
-        sdk.FeatureCollection.return_value.getInfo.side_effect = fault
-        monkeypatch.setattr(trends, "ee", sdk)
-        run, error = trends.fetch_monthly, trends.TrendExtractionError
+    monkeypatch.setattr(extract, "_polygon", Mock())
+    monkeypatch.setattr(extract, "build_layers", Mock())
+    monkeypatch.setattr(extract, "_reduce_batch", Mock(side_effect=fault))
+    run, error = extract.extract_cells, extract.ExtractionError
     with pytest.raises(error, match="timed out") as caught:
         run(request)
     assert "PRIVATE_TIMEOUT_MARKER" not in "".join(

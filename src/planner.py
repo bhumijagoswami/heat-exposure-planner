@@ -10,7 +10,6 @@ from sklearn.base import clone
 
 from .demo import PRESETS
 from .extract import FRACTIONS
-from .index import SCHEMES
 from .model import DriverModel
 
 MIN_AREA_M2 = 10_000
@@ -48,11 +47,9 @@ def _land_use_flags(data):
 
 
 def rank_sites(
-    cells: pd.DataFrame, scheme: str = "equal", top_n: int = 10
+    cells: pd.DataFrame, top_n: int = 10
 ) -> pd.DataFrame:
     """Rank eligible cells. Coverage uses the sum of all valid ROI exposure scores."""
-    if scheme not in SCHEMES:
-        raise ValueError("Choose a supported exposure weighting scheme.")
     if (
         isinstance(top_n, bool)
         or not isinstance(top_n, Integral)
@@ -60,7 +57,7 @@ def rank_sites(
     ):
         raise ValueError(f"Choose between 1 and {MAX_SITES} sites.")
     data = cells.set_index("cell_id")
-    exposure = data[f"exposure_{scheme}"]
+    exposure = data["exposure_equal"]
     scored = np.isfinite(exposure) & exposure.ge(0)
     fractions = data[FRACTIONS]
     valid = (

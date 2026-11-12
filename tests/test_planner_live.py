@@ -20,7 +20,7 @@ def test_delhi_planting_scenario():
         end_year=2023,
     )
     cells = extract_cells(request, season="summer").cells
-    sites = rank_sites(score_exposure(cells).cells)
+    sites = rank_sites(score_exposure(cells))
     assert 0 < len(sites) <= 10
     assert sites.exposure.is_monotonic_decreasing
     assert sites.cumulative_exposure_pct.is_monotonic_increasing

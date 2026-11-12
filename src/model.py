@@ -1,13 +1,10 @@
-"""Spatial validation and Tree SHAP explanations for land-surface temperature."""
+"""Local planting scenario model for land-surface temperature."""
 
 from dataclasses import dataclass
 
 import geopandas as gpd
 import pandas as pd
-import shap
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import r2_score, root_mean_squared_error
-from sklearn.model_selection import GroupKFold
 
 from .gee_layers import DW_CLASSES, INDICES
 
@@ -19,22 +16,7 @@ FEATURES = [
 ]
 MIN_MODEL_CELLS = 150
 BLOCK_SIZE_M = 2000
-MAX_SHAP_CELLS = 2000
 _SEED = 42
-
-
-def predictor_label(name: str) -> str:
-    if name.startswith("dw_frac_"):
-        return (
-            name.removeprefix("dw_frac_").replace("_", " ").capitalize() + " fraction"
-        )
-    return {
-        "ndvi": "NDVI",
-        "ndbi": "NDBI",
-        "mndwi": "MNDWI",
-        "elevation_m": "Elevation",
-        "slope_deg": "Slope",
-    }.get(name, name)
 
 
 class InsufficientDriverData(ValueError):
@@ -46,24 +28,8 @@ class DriverModel:
     forest: RandomForestRegressor
     features: pd.DataFrame
     validation: pd.DataFrame
-    r2: float
-    rmse_c: float
-    baseline_c: float
-    contributions: pd.DataFrame
-    importance: pd.Series
-    excluded_cells: int
-
-    def explain_cell(self, cell_id: str) -> pd.Series:
-        """Signed °C contributions to the full-data model prediction for any fitted cell."""
-        if cell_id in self.contributions.index:
-            return self.contributions.loc[cell_id].copy()
-        row = self.features.loc[[cell_id]]
-        values = shap.TreeExplainer(self.forest)(row).values
-        return pd.Series(values[0].reshape(-1), index=FEATURES, name=cell_id)
-
-
 def fit_drivers(cells: gpd.GeoDataFrame) -> DriverModel:
-    """Fit LST on land cover, spectral indices and terrain; report out-of-fold skill."""
+    """Fit LST on land cover, spectral indices and terrain."""
     if (
         cells.crs is None
         or not cells.crs.is_projected
@@ -103,36 +69,6 @@ def fit_drivers(cells: gpd.GeoDataFrame) -> DriverModel:
     forest = RandomForestRegressor(
         n_estimators=100, min_samples_leaf=3, max_depth=12, random_state=_SEED, n_jobs=1
     )
-    validation = pd.DataFrame(
-        {"observed_c": target, "block": blocks, "fold": -1, "held_out_c": float("nan")}
-    )
-    folds = GroupKFold(n_splits=min(5, len(unique)))
-    for fold, (train, test) in enumerate(folds.split(features, groups=blocks)):
-        forest.fit(features.iloc[train], target.iloc[train])
-        ids = features.index[test]
-        validation.loc[ids, "held_out_c"] = forest.predict(features.iloc[test])
-        validation.loc[ids, "fold"] = fold
-
     forest.fit(features, target)
-    sample = (
-        features
-        if len(features) <= MAX_SHAP_CELLS
-        else features.sample(MAX_SHAP_CELLS, random_state=_SEED).sort_index()
-    )
-    explanation = shap.TreeExplainer(forest)(sample)
-    contributions = pd.DataFrame(
-        explanation.values.reshape(len(sample), len(FEATURES)),
-        index=sample.index,
-        columns=FEATURES,
-    )
-    return DriverModel(
-        forest=forest,
-        features=features,
-        validation=validation,
-        r2=float(r2_score(target, validation.held_out_c)),
-        rmse_c=float(root_mean_squared_error(target, validation.held_out_c)),
-        baseline_c=float(explanation.base_values.reshape(-1)[0]),
-        contributions=contributions,
-        importance=contributions.abs().mean().sort_values(ascending=False),
-        excluded_cells=len(data) - len(numeric),
-    )
+    training = pd.DataFrame({"observed_c": target, "block": blocks})
+    return DriverModel(forest, features, training)

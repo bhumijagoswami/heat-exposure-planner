@@ -32,11 +32,6 @@ def test_screening_ranking_ties_and_roi_coverage():
     )
     pd.testing.assert_frame_equal(sites, planner.rank_sites(cells.iloc[::-1]))
     pd.testing.assert_frame_equal(sites.head(1), planner.rank_sites(cells, top_n=1))
-    assert planner.rank_sites(cells, scheme="air_forward", top_n=1).index.tolist() == [
-        "a"
-    ]
-
-
 def test_no_sites_bad_classification_or_zero_total():
     cells = candidates()
     assert planner.rank_sites(cells.assign(exposure_equal=np.nan)).empty
@@ -56,8 +51,6 @@ def test_invalid_scenario(value):
 
 
 def test_bounds_for_rank_controls():
-    with pytest.raises(ValueError):
-        planner.rank_sites(candidates(), scheme="other")
     for count in (False, -1, 101, 1.2):
         with pytest.raises(ValueError):
             planner.rank_sites(candidates(), top_n=count)
@@ -118,39 +111,6 @@ def test_bootstrap_with_known_response_and_missing_model_cell(monkeypatch):
             assert (result.converted_m2 >= previous.converted_m2).all()
             assert (result.delta_c.iloc[:3] <= previous.delta_c.iloc[:3]).all()
         previous = result
-
-
-def test_small_area_keeps_site_ranking_in_app(monkeypatch):
-    from streamlit.testing.v1 import AppTest
-    from src.ui import drivers
-    import geopandas as gpd
-    from shapely.geometry import Point
-
-    data = candidates().assign(
-        lst_c=32,
-        ndvi=0.25,
-        no2_mol_m2=0.01,
-        population=200,
-        coverage_pct=100,
-        ndbi=0.1,
-        mndwi=0.1,
-        elevation_m=215,
-        slope_deg=0,
-    )
-    grid = gpd.GeoDataFrame(
-        data,
-        geometry=[Point(i * 500, 0).buffer(100) for i in range(len(data))],
-        crs=32643,
-    )
-    monkeypatch.setattr(drivers, "_load_cells", lambda request, season: grid)
-    page = AppTest.from_file("../app.py", default_timeout=40).run()
-    page.sidebar.selectbox[0].select("Custom live analysis").run()
-    next(b for b in page.button if b.label == "Analyze area").click().run()
-    assert not page.exception
-    assert any("150 complete cells" in w.value for w in page.warning)
-    assert len(page.tabs[4].dataframe) == 1
-    assert "Cumulative exposure covered (%)" in page.tabs[4].dataframe[0].value
-    assert any("require a fitted driver model" in info.value for info in page.info)
 
 
 def test_airport_district_and_mixed_use_flags():

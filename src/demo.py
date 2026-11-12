@@ -3,7 +3,6 @@
 from pathlib import Path
 
 import geopandas as gpd
-import pandas as pd
 
 from .validate import validate_inputs
 
@@ -24,5 +23,4 @@ def demo_request(name):
 def load_demo(name):
     prefix = PRESETS[name][0]
     cells = gpd.read_parquet(DEMO_DIR / f"{prefix}_cells.parquet")
-    months = pd.read_parquet(DEMO_DIR / f"{prefix}_monthly.parquet")
-    return demo_request(name), cells, months
+    return demo_request(name), cells

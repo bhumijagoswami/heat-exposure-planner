@@ -18,9 +18,8 @@ from src.config import (
 )
 from src.extract import extract_cells, ExtractionError
 from src.gee_auth import initialize_earth_engine, EarthEngineAuthError
-from src.zones import zone_directory
 from src.index import score_exposure
-from src.model import fit_drivers, InsufficientDriverData, predictor_label
+from src.model import InsufficientDriverData
 from src.validate import validate_inputs
 
 
@@ -82,12 +81,10 @@ def render_area_form():
             try:
                 cells = _load_cells(request, season)
                 progress.progress(
-                    65, text="Scoring exposure and fitting spatial folds…"
+                    65, text="Scoring exposure…"
                 )
-                scored = score_exposure(cells).cells
+                scored = score_exposure(cells)
                 st.session_state.planner_input = (request, season, scored)
-                model = fit_drivers(cells)
-                st.session_state.driver_result = (request, season, model)
                 progress.progress(100, text="Analysis complete")
             finally:
                 progress.empty()
@@ -102,52 +99,3 @@ def render_area_form():
             return
 
 
-def render_drivers():
-    st.header("Land-surface temperature drivers")
-    if "driver_result" not in st.session_state:
-        st.info(
-            "Driver results require at least 150 complete cells in three spatial blocks."
-        )
-        return
-    request, season, model = st.session_state.driver_result
-    st.caption(
-        f"{request.lat:.4f}°, {request.lon:.4f}° · {request.radius_km:g} km radius · "
-        f"{request.cell_size_m} m cells · {season}, {request.start_year}–{request.end_year}"
-    )
-    a, b = st.columns(2)
-    a.metric("Spatial CV R²", f"{model.r2:.3f}")
-    b.metric("Spatial CV RMSE (°C)", f"{model.rmse_c:.2f}")
-    st.caption(
-        f"{len(model.features)} complete cells · {model.excluded_cells} excluded · "
-        f"{model.validation.block.nunique()} spatial blocks (2 km) · "
-        f"{model.validation.fold.nunique()} held-out folds"
-    )
-    st.subheader("Drivers across the area")
-    st.caption(
-        f"Mean absolute SHAP contribution across {len(model.contributions)} cells. "
-        "Random forest fitted to Landsat LST using Dynamic World, Sentinel-2 and SRTM."
-    )
-    st.dataframe(
-        model.importance.rename(index=predictor_label)
-        .rename("Mean absolute contribution (°C)")
-        .rename_axis("Predictor")
-    )
-    st.subheader("Explore one zone")
-    zones = zone_directory(st.session_state.planner_input[2])
-    cell = st.selectbox("Zone", model.features.index, format_func=zones.Zone.get)
-    st.link_button("Open zone in Google Maps", zones.at[cell, "Google Maps"])
-    local = model.explain_cell(cell)
-    predicted = model.baseline_c + local.sum()
-    st.write(
-        f"Observed LST {model.validation.at[cell, 'observed_c']:.2f} °C · "
-        f"Fitted LST {predicted:.2f} °C · Model baseline {model.baseline_c:.2f} °C"
-    )
-    st.dataframe(
-        local.rename(index=predictor_label)
-        .sort_values(key=abs, ascending=False)
-        .rename("Signed contribution (°C)")
-        .rename_axis("Predictor")
-    )
-    st.caption(
-        "Contributions describe associations learned by the fitted model. Correlated predictors can share credit."
-    )
