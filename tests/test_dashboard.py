@@ -35,6 +35,7 @@ def test_switch_presets_and_layers_without_earth_engine(monkeypatch):
         "Action Plan",
         "Briefing",
         "Methodology & Limits",
+        "Comparison",
     ]
     assert all(
         any("How to read this" in box.value for box in tab.info) for tab in page.tabs
@@ -54,3 +55,29 @@ def test_switch_presets_and_layers_without_earth_engine(monkeypatch):
         "planner_input" not in page.session_state
         and "trends_result" not in page.session_state
     )
+
+
+def test_compare_presets_and_custom_coordinates(monkeypatch):
+    from src.ui import comparison
+
+    _, cells, months = load_demo(next(iter(PRESETS)))
+    calls = []
+
+    def load(request, season):
+        calls.append((request.lat, request.lon, season))
+        return cells
+
+    monkeypatch.setattr(comparison, "_load_cells", load)
+    monkeypatch.setattr(comparison, "_load_monthly", lambda request: months)
+    page = AppTest.from_file("../app.py", default_timeout=30).run()
+    def compare():
+        return next(b for b in page.button if b.label == "Compare areas")
+    compare().click().run()
+    tab = page.tabs[-1]
+    assert not page.exception and len(tab.get("vega_lite_chart")) == 3
+    assert any("hotter by" in h.value for h in tab.subheader)
+    tab.selectbox[-1].select("Nitrogen dioxide").run()
+    assert not page.exception
+    tab.selectbox[0].select(comparison.CUSTOM).run()
+    compare().click().run()
+    assert not page.exception and calls == [(0.0, 0.0, "summer")]

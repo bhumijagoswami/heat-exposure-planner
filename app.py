@@ -2,6 +2,7 @@ from pathlib import Path
 
 import streamlit as st
 
+from src.ui.comparison import render_comparison
 from src.ui.dashboard import (
     LIVE,
     render_map,
@@ -18,7 +19,7 @@ st.set_page_config(page_title="Heat & air pollution exposure planner", layout="w
 st.html(Path(__file__).parent / "src/ui/theme.css")
 source = select_area()
 st.title("Heat & air pollution exposure planner")
-grid, overview, drivers, trends, planner, report, methods = st.tabs(
+grid, overview, drivers, trends, planner, report, methods, comparison = st.tabs(
     [
         "Map",
         "Overview",
@@ -27,6 +28,7 @@ grid, overview, drivers, trends, planner, report, methods = st.tabs(
         "Action Plan",
         "Briefing",
         "Methodology & Limits",
+        "Comparison",
     ]
 )
 with overview:
@@ -64,3 +66,6 @@ with methods:
         "**How to read this** · Use this guide to understand the scores, the satellite measurements and their limits."
     )
     render_methodology()
+
+with comparison:
+    render_comparison()

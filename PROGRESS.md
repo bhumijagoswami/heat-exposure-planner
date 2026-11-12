@@ -22,7 +22,6 @@
 - Decisions — LST anomalies use a cell-area-weighted ROI mean. Factors use tied mid-percentiles. Forward schemes double the named factor. Zero population gets zero weight; missing scores retain unknown priority.
 - Live QA — SDK authentication, Delhi layer values, observation-weighted NO₂ over missing years and Delhi exposure scoring verified. A keyed cloud-score join and native-grid NO₂ composites brought the 358-cell default extraction test under 60 s (52.7 s and 24.6 s including initialization). Backend latency can vary.
 - Decisions — Require 150 complete cells and three occupied 2 km blocks. Use up to five held-out folds, pooled R²/RMSE and at most 2,000 seeded cells for mean absolute SHAP. Forests stay in session memory.
-- Live M6 QA — Summer 2023 Delhi Drivers screen: 358 cells, 30 blocks, five folds, R² 0.813 and RMSE 1.06 °C. Launch with `.venv/bin/streamlit run app.py`.
 - Known issue — Full-period live extraction latency varies. M6 QA measured 65.9 s against the 60 s target, then the same test passed in 9.1 s including initialization.
 - Decisions — Screen cells ≥1 ha with ≥25% combined bare/shrub/grass, zero classified water and <50% built fraction. Rank by selected weighted exposure; the denominator includes all scored cells. Scenario transfers only existing bare cover with other predictors fixed. Use 100 spatial block bootstrap RF refits and 95% percentile intervals.
 - Live M7 QA — Delhi airport area, summer 2023, 25% bare-to-tree conversion: ten sites cover 6.75% of summed exposure. Highest-ranked site ΔLST −0.31 °C (95% bootstrap interval −0.67 to −0.01 °C).
@@ -37,3 +36,4 @@
 - Handoff — Deployment instructions are in README.md. Rotate any deployment service-account key after grading using SECURITY.md.
 - UI step 1 — Map opens first with OSM/Esri imagery, five selectable grid layers, legend and click details. Dashboard tests and offline Chrome interaction checks passed; live tile delivery unverified.
 - UI step 2 — Seven tab reading guides, chart takeaways, shared zone names and Google Maps links, hotspot bands, µmol/m² NO₂ and plain-language trend findings. Seven targeted offline tests passed.
+- UI step 3 — Comparison tab supports preset/custom pairs over matched summer windows, area-weighted metrics, cover, maps and monthly overlays. Two targeted offline UI tests passed, including mocked custom extraction.
