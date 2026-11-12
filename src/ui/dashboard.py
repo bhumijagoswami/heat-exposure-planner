@@ -92,7 +92,7 @@ def render_story():
         st.warning("There are too few overlapping observations to identify hotspots.")
         return place
     st.info(
-        f"An estimated **{residents:,.0f} residents** live in the **{highest.sum()} zones** where heat, pollution and limited greenery combine with the greatest population exposure."
+        f"**{highest.sum()} zones** have the highest combined risk, with about **{residents:,.0f} residents**."
     )
     layer = st.radio("Map layer", list(LAYERS), horizontal=True)
     keys = select_markers(cells)

@@ -46,6 +46,11 @@ function element(tag,attrs,parent){
   for(const [k,v] of Object.entries(attrs))el.setAttribute(k,v);
   parent.append(el);return el;
 }
+function attachPopup(node, details) {
+  const show=()=>{popup.querySelector("span").textContent=details;popup.hidden=false};
+  node.onclick=show;
+  node.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();show()}};
+}
 function draw(){
   const w=svg.clientWidth,h=svg.clientHeight,n=2**z,size=n*256;
   const ox=cx*size-w/2,oy=cy*size-h/2;svg.replaceChildren();
@@ -58,7 +63,8 @@ function draw(){
   }
   for(const row of data.rows){
     const d=row.rings.map(r=>r.map(([x,y],i)=>(i?"L":"M")+(x*size-ox).toFixed(1)+" "+(y*size-oy).toFixed(1)).join("")+"Z").join("");
-    element("path",{d,fill:colors[row.band],"fill-rule":"evenodd"},svg);
+    const zone=element("path",{d,fill:colors[row.band],"fill-rule":"evenodd",role:"button",tabindex:0,"aria-label":row.details},svg);
+    attachPopup(zone,row.details);
   }
   for(const marker of data.markers){
     let [x,y]=project(marker.center);
@@ -66,9 +72,7 @@ function draw(){
     const group=element("g",{transform:`translate(${x*size-ox} ${y*size-oy})`,role:"button",tabindex:0,"aria-label":marker.details},svg);
     element("circle",{r:13,fill:"#182324",stroke:"white","stroke-width":1.5},group);
     element("text",{y:5,fill:"white","text-anchor":"middle","font-weight":700},group).textContent=marker.number;
-    const show=()=>{popup.querySelector("span").textContent=marker.details;popup.hidden=false};
-    group.onclick=show;
-    group.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();show()}};
+    attachPopup(group,marker.details);
   }
 }
 function fit(){

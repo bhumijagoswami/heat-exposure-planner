@@ -1,5 +1,5 @@
 # Progress
-- Current redesign — Completed story, shared street/satellite map, Compare, About and central Delhi cache (353 zones, 36 months). Chrome marker/popup/toggle checks passed.
+- Current UI — Six layers on both pages, shared physical scales and pooled Compare risk, full zone details, aligned land colours. Cached MODIS diagnosis in About; 114 offline tests, Ruff/Bandit and browser zone-popup check passed.
 - Done — M1 scaffold on `dev`, Python 3.12 venv, hash-locked development dependencies, credential exclusions, local Git hook and security notes.
 - Done — M2 SDK initialization with local login or deployment secrets, validated analysis inputs, offline tests and opt-in live smoke test.
 - Done — M3 lazy annual/summer composites for LST, NO₂, optical indices, Dynamic World, terrain and population.

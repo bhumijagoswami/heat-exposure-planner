@@ -166,7 +166,7 @@ def monthly_line(places, field):
             ),
             strokeDash=alt.StrokeDash(
                 "Place:N",
-                legend=alt.Legend(title=None, orient="bottom")
+                legend=alt.Legend(title=None, orient="bottom", labelLimit=0, columns=1)
                 if len(places) > 1
                 else None,
             ),
@@ -179,6 +179,11 @@ def monthly_line(places, field):
         )
     )
     st.altair_chart(year + line, width="stretch")
+    explanation = (
+        " MODIS averages 1 km pixels that mix hot and cool surfaces. Cloud screening also leaves some summer months unobserved; both can contribute to lower readings than the finer Landsat map."
+        if heat
+        else ""
+    )
     st.caption(
-        f"Monthly area averages · {'MODIS · ' + HEAT if heat else 'Sentinel-5P · ' + AIR} · January 2019–December 2021 · shaded 2020: Lockdown year: pollution fell sharply."
+        f"Monthly area averages · {'MODIS · ' + HEAT if heat else 'Sentinel-5P · ' + AIR} · January 2019–December 2021 · shaded 2020: Lockdown year: pollution fell sharply.{explanation}"
     )

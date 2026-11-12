@@ -8,7 +8,22 @@ from src.index import score_exposure
 from src.model import fit_drivers, InsufficientDriverData
 from src.planner import rank_sites, estimate_scenario
 from src.ui.limits import begin_compute
-from src.ui.places import HEAT, AIR
+from src.config import summer_months
+from src.demo import PRESETS
+from src.ui.places import HEAT, AIR, preset, mean
+import pandas as pd
+
+
+def sensor_check(place):
+    months = summer_months(place.request.lat)
+    readings = place.months.loc[
+        place.months.index.month.isin(months), "roi_day_c"
+    ].dropna()
+    surface = mean(place.cells, "lst_c")
+    if readings.empty or pd.isna(surface):
+        return f"{place.name}: too few summer observations for the sensor check."
+    gap = surface - readings.mean()
+    return f"{place.name}: Landsat {surface:.1f} °C vs MODIS {readings.mean():.1f} °C across {len(readings)} available summer months ({abs(gap):.1f} °C apart)."
 
 
 def render_about(place):
@@ -23,11 +38,16 @@ def render_about(place):
             f"Sentinel-5P measures nitrogen dioxide: {AIR}. Dynamic World estimates land cover at 10 m. WorldPop estimates the residential population in 2020; people and neighbourhoods change."
         )
         st.write(
-            "Overall risk combines heat, air pollution and lack of greenery equally, then accounts for residents. Dark red marks the highest tenth locally, orange the next fifth, pale yellow the next three tenths and blue the lowest four tenths. For trees, fewer trees means greater concern. Grey means no data."
+            "Overall risk combines heat, air pollution and lack of greenery equally, then accounts for residents. Dark red marks the highest tenth locally, orange the next fifth, pale yellow the next three tenths and blue the lowest four tenths. Compare ranks combined risk across both places together. Darker green means more tree cover. Grey means no data."
         )
         st.write(
             "Markers skip known airfield and restricted-land flags. Land cover cannot establish ownership, permission or airfield boundaries. Check on site before acting. Street tiles come from OpenStreetMap and satellite imagery from Esri."
         )
+        for name in PRESETS:
+            try:
+                st.caption(sensor_check(preset(name)))
+            except OSError:
+                st.caption(f"{name}: cached readings are unavailable for the sensor check.")
         if place is None:
             return
         st.write(

@@ -8,13 +8,61 @@ import pandas as pd
 import streamlit as st
 from shapely.geometry import mapping
 
+from src.index import score_exposure
 from src.planner import _land_use_flags
 
-LAYERS = {
-    "Overall risk": "exposure_equal",
-    "Surface heat": "lst_c",
-    "Tree cover": "dw_frac_trees",
-    "People": "population",
+LAYERS = (
+    "Overall risk",
+    "Surface heat",
+    "Tree cover",
+    "Built-up share",
+    "Land cover type",
+    "People",
+)
+LAND_COLORS = {
+    "Built-up": "#888480",
+    "Trees": "#23623b",
+    "Grass": "#a7ce79",
+    "Bare": "#d5b487",
+    "Water": "#4085b4",
+    "Other (farmland, shrub)": "#aa832e",
+}
+LAND_NAMES = {
+    "built": "Built-up",
+    "trees": "Trees",
+    "grass": "Grass",
+    "bare": "Bare",
+    "water": "Water",
+    "crops": "Farmland",
+    "shrub_and_scrub": "Shrub",
+    "flooded_vegetation": "Flooded vegetation",
+    "snow_and_ice": "Snow or ice",
+}
+SCALES = {
+    "Surface heat": (
+        "lst_c",
+        [35, 40, 45],
+        "Surface temperature (°C)",
+        ["#ffffb2", "#fecc5c", "#fd8d3c", "#bd0026"],
+    ),
+    "Tree cover": (
+        "dw_frac_trees",
+        [0.25, 0.5, 0.75],
+        "Tree cover (%)",
+        ["#edf8e9", "#bae4b3", "#74c476", "#238b45"],
+    ),
+    "Built-up share": (
+        "dw_frac_built",
+        [0.25, 0.5, 0.75],
+        "Built-up share (%)",
+        ["#eeeae5", "#c9bdb2", "#988578", "#614c40"],
+    ),
+    "People": (
+        "population",
+        [1000, 5000, 10000],
+        "Estimated residents per zone",
+        ["#efedf5", "#bcbddc", "#9e9ac8", "#6a51a3"],
+    ),
 }
 COLORS = ["#4688bc", "#fff1ab", "#ee9041", "#952a30", "#949a9e"]
 
@@ -23,8 +71,7 @@ def relative_bands(cells, field):
     # Stable identifiers break ties at percentile boundaries, even if input is shuffled.
     valid = cells[field].dropna().sort_index()
     position = (
-        (valid.rank(method="first", ascending=field != "dw_frac_trees") - 0.5)
-        / len(valid)
+        (valid.rank(method="first", ascending=True) - 0.5) / len(valid)
         if len(valid)
         else valid
     )
@@ -65,6 +112,7 @@ def marker_records(indexed, keys):
         if valid.area_m2.sum()
         else float("nan")
     )
+    types = dominant_types(indexed)
     records = []
     for number, key in enumerate(keys, 1):
         row = indexed.loc[key]
@@ -77,7 +125,7 @@ def marker_records(indexed, keys):
         gap = row.lst_c - average
         heat = f"{row.lst_c:.1f} °C ({abs(gap):.1f} °C {'above' if gap >= 0 else 'below'} average)"
         cover = f"{row.dw_frac_trees:.0%}" if pd.notna(row.dw_frac_trees) else "No data"
-        details = f"Zone {number} · {tag}\nSurface temperature: {heat}\nResidents: {row.population:,.0f}\nTree cover: {cover}"
+        details = f"Zone {number} · {tag}\nSurface temperature: {heat}\nResidents: {row.population:,.0f}\nTree cover: {cover}\nBuilt-up share: {reading(row.dw_frac_built, '.1%')}\nDominant type: {types[key] if pd.notna(types[key]) else 'No data'}"
         records.append(
             dict(
                 number=number,
@@ -89,38 +137,102 @@ def marker_records(indexed, keys):
     return records
 
 
-def render_map(cells, *, caption, layer=None, keys=()):
-    """Omitting the layer selects the shared absolute temperature scale."""
+def pooled_risk(frames):
+    fields = ["lst_c", "no2_mol_m2", "ndvi", "population", "coverage_pct", "area_m2"]
+    pooled = pd.concat([frame[fields] for frame in frames], ignore_index=True)
+    risk = score_exposure(pooled).exposure_equal
+    ranks = (risk.rank(method="average") - 0.5) / max(1, risk.count())
+    bands = (
+        pd.cut(ranks, [-1, 0.4, 0.7, 0.9, 1], labels=False, right=False)
+        .fillna(4)
+        .astype(int)
+    )
+    split = len(frames[0])
+    return bands.iloc[:split].to_numpy(), bands.iloc[split:].to_numpy()
+
+
+def dominant_types(cells):
+    fractions = cells.filter(regex="^dw_frac_")
+    return (
+        fractions.fillna(-1)
+        .idxmax(axis=1)
+        .str.removeprefix("dw_frac_")
+        .map(LAND_NAMES)
+        .where(fractions.max(axis=1) > 0)
+    )
+
+
+def reading(value, fmt, unit=""):
+    return f"{value:{fmt}}{unit}" if pd.notna(value) else "No data"
+
+
+def zone_details(row, land):
+    return "\n".join(
+        [
+            f"Surface temperature: {reading(row.lst_c, '.1f', ' °C')}",
+            f"Tree cover: {reading(row.dw_frac_trees, '.1%')}",
+            f"Built-up share: {reading(row.dw_frac_built, '.1%')}",
+            f"Dominant type: {land if pd.notna(land) else 'No data'}",
+            f"Residents: {reading(row.population, ',.0f')}",
+        ]
+    )
+
+
+def render_map(cells, *, caption, layer, keys=(), pooled=None):
     indexed = cells.set_index("cell_id")
-    if layer is None:
+    types = dominant_types(indexed)
+    if layer in SCALES:
+        field, edges, legend, palette = SCALES[layer]
         bands = (
             pd.cut(
-                indexed.lst_c,
-                [-float("inf"), 35, 40, 45, float("inf")],
-                labels=False,
+                indexed[field],
+                [-float("inf"), *edges, float("inf")],
                 right=False,
+                labels=False,
             )
             .fillna(4)
             .astype(int)
         )
-        labels = ["Below 35", "35–under 40", "40–under 45", "45 and above", "No data"]
-        legend = "Surface temperature (°C) · shared 30–50 scale"
+        t = [f"{v * 100 if field.startswith('dw_frac') else v:,.0f}" for v in edges]
+        labels = [f"<{t[0]}", f"{t[0]}–<{t[1]}", f"{t[1]}–<{t[2]}", f"≥{t[2]}"]
+    elif layer == "Land cover type":
+        legend = "Dominant land cover · Dynamic World"
+        labels = list(LAND_COLORS)
+        palette = list(LAND_COLORS.values())
+        grouped = types.where(types.isin(labels), labels[-1]).where(types.notna())
+        bands = (
+            grouped.map({label: i for i, label in enumerate(labels)})
+            .fillna(len(labels))
+            .astype(int)
+        )
     else:
-        bands = relative_bands(indexed, LAYERS[layer])
-        labels = ["Low", "Moderate", "High", "Very high", "No data"]
+        bands = (
+            relative_bands(indexed, "exposure_equal")
+            if pooled is None
+            else pd.Series(pooled, index=indexed.index)
+        )
         legend = (
-            "Lack of tree cover" if layer == "Tree cover" else layer
-        ) + " compared with the rest of this area"
-    rows = [
-        dict(geometry=mapping(geometry), band=int(bands[key]))
-        for key, geometry in indexed.geometry.to_crs(4326).items()
-    ]
+            "Overall risk · rank within this place"
+            if pooled is None
+            else "Combined risk · rank across both places pooled"
+        )
+        labels = ["Bottom 40%", "40–70%", "70–90%", "Top 10%"]
+        palette = COLORS[:4]
+    rows = []
+    for row in indexed.to_crs(4326).itertuples():
+        rows.append(
+            dict(
+                geometry=mapping(row.geometry),
+                band=int(bands[row.Index]),
+                details=zone_details(row, types[row.Index]),
+            )
+        )
     payload = dict(
         rows=rows,
         markers=marker_records(indexed, keys) if keys else [],
-        colors=COLORS,
+        colors=[*palette, COLORS[-1]],
         legend=legend,
-        labels=labels,
+        labels=[*labels, "No data"],
         satellite=False,
     )
     encoded = base64.b64encode(json.dumps(payload, allow_nan=False).encode()).decode()

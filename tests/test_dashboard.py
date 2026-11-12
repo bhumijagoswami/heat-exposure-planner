@@ -41,6 +41,9 @@ def test_compare_custom_place_with_missing_observations(monkeypatch):
     page.radio[0].set_value("Compare two places").run()
     assert not page.exception and len(page.get("iframe")) == 2
     assert any("7.5 °C apart" in item.value for item in page.caption)
+    assert any("7.5 °C apart" in item.value for item in page.expander[-1].caption)
+    page.radio[1].set_value("Combined risk").run()
+    assert not page.exception and len(page.get("iframe")) == 2
     assert page.table[0].value.shape == (6, 2)
     page.checkbox[1].check().run()
     page.button[0].click().run()

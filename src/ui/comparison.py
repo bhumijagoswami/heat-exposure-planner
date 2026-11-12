@@ -5,7 +5,14 @@ import pandas as pd
 import streamlit as st
 
 from src.config import summer_months
-from src.ui.basemap import COLORS, relative_bands, render_map
+from src.ui.basemap import (
+    COLORS,
+    LAND_COLORS,
+    LAYERS,
+    pooled_risk,
+    relative_bands,
+    render_map,
+)
 from src.ui.places import HEAT, choose_place, mean, monthly_line
 
 
@@ -27,19 +34,6 @@ def stats(place):
     ]
 
 
-def sensor_check(place):
-    months = summer_months(place.request.lat)
-    readings = place.months.loc[
-        place.months.index.month.isin(months), "roi_day_c"
-    ].dropna()
-    surface = mean(place.cells, "lst_c")
-    if readings.empty or pd.isna(surface):
-        return f"{place.name}: too few summer observations for the sensor check."
-    gap = surface - readings.mean()
-    if abs(gap) > 3:
-        return f"{place.name}: Landsat {surface:.1f} °C vs MODIS {readings.mean():.1f} °C across {len(readings)} available summer months ({abs(gap):.1f} °C apart)."
-
-
 def render_comparison():
     st.title("Which place carries more heat?")
     places = []
@@ -57,17 +51,32 @@ def render_comparison():
     st.caption(
         "Both places use the same summer months and the same satellite cloud filters."
     )
-    for place, column in zip(places, st.columns(2)):
+    layer = st.radio("Map layer", [*LAYERS[1:], "Combined risk"], horizontal=True)
+    bands = (
+        pooled_risk([p.cells for p in places])
+        if layer == "Combined risk"
+        else (None, None)
+    )
+    for place, column, pooled in zip(places, st.columns(2), bands):
         with column:
             st.subheader(place.name)
             render_map(
                 place.cells,
-                caption=f"Summer surface heat on the shared 30–50 °C scale · Landsat 8/9, {HEAT} · {place.window}.",
+                layer=layer,
+                pooled=pooled,
+                caption=f"{layer} · "
+                + (
+                    {
+                        "Surface heat": "Landsat 8/9",
+                        "Tree cover": "Dynamic World",
+                        "Built-up share": "Dynamic World",
+                        "Land cover type": "Dynamic World",
+                        "People": "WorldPop (2020)",
+                        "Combined risk": "Landsat, Sentinel-2, Sentinel-5P and WorldPop (2020)",
+                    }[layer]
+                )
+                + f" · {place.window}.",
             )
-    for p in places:
-        note = sensor_check(p)
-        if note:
-            st.caption(note)
     left, right = stats(a), stats(b)
     labels = [
         "Summer surface temperature (°C)",
@@ -113,7 +122,9 @@ def render_comparison():
                 ("water", "Water"),
             )
         }
-        values["Other"] = 100 - sum(values.values())
+        values["Other (farmland, shrub)"] = (
+            max(0.0, 100 - sum(values.values())) if known.shape[0] else float("nan")
+        )
         covers.extend(
             {"Place": "AB"[i] + " · " + p.name, "Land": label, "Share": v}
             for label, v in values.items()
@@ -129,20 +140,14 @@ def render_comparison():
         alt.Chart(cover)
         .mark_bar()
         .encode(
-            y=alt.Y("Place:N", title=None),
+            y=alt.Y("Place:N", title=None, axis=alt.Axis(labelLimit=0)),
             x=alt.X("sum(Share):Q", title="Land cover (%)"),
             color=alt.Color(
                 "Land:N",
+                legend=alt.Legend(labelLimit=0, orient="bottom", columns=2),
                 scale=alt.Scale(
-                    domain=["Built-up", "Trees", "Bare", "Grass", "Water", "Other"],
-                    range=[
-                        "#952a30",
-                        "#4688bc",
-                        "#ee9041",
-                        "#a7c9da",
-                        "#21679a",
-                        "#fff1ab",
-                    ],
+                    domain=list(LAND_COLORS),
+                    range=list(LAND_COLORS.values()),
                 ),
             ),
             tooltip=["Land:N", alt.Tooltip("Share:Q", format=".1f")],
@@ -152,24 +157,23 @@ def render_comparison():
     st.caption(f"Share of land by cover type · Dynamic World (10 m) · {a.window}.")
     shares = [left[-1], right[-1]]
     st.subheader(
-        f"{shares[0]:.0f}% of residents in A and {shares[1]:.0f}% in B live above 40 °C"
+        f"{shares[0]:.0f}% of residents in A and {shares[1]:.0f}% in B live in zones where the ground surface exceeds 40 °C"
         if all(pd.notna(shares))
         else "Population or heat observations are incomplete"
     )
     chart = pd.DataFrame({"Place": ["A · " + a.name, "B · " + b.name], "Share": shares})
-    st.altair_chart(
-        alt.Chart(chart)
-        .mark_bar(color=COLORS[2])
-        .encode(
-            y="Place:N",
-            x=alt.X(
-                "Share:Q",
-                title="Residents in zones above 40 °C (%)",
-                scale=alt.Scale(domain=[0, 100]),
-            ),
+    base = alt.Chart(chart).encode(
+        y=alt.Y("Place:N", title=None, axis=alt.Axis(labelLimit=0)),
+        x=alt.X(
+            "Share:Q",
+            title="Residents in zones where the ground surface exceeds 40 °C (%)",
+            scale=alt.Scale(domain=[0, 100]),
         ),
-        width="stretch",
     )
+    zeros = base.transform_filter("datum.Share === 0").mark_text(
+        align="left", dx=4, text="0%"
+    )
+    st.altair_chart(base.mark_bar(color=COLORS[2]) + zeros, width="stretch")
     st.caption(
         f"Residents in zones above 40 °C among those with temperature readings · Landsat 8/9 ({HEAT}), WorldPop (2020) · {a.window}."
     )
@@ -183,10 +187,5 @@ def render_comparison():
         if all(pd.notna([left[1], right[1]]))
         else "The hottest-zones gap could not be measured in both places."
     )
-    st.info(
-        first
-        + " "
-        + second
-        + " Delhi and Bengaluru have different climates, so also look at the hottest-zones gap."
-    )
+    st.info(first + " " + second)
     return a
