@@ -1,5 +1,5 @@
 # Progress
-- Redesign — Removed weighting alternatives, SHAP, trend statistics and expert screens. The two views reuse live and offline observations, population-weighted exposure and planting estimates.
+- Current redesign — Step 1 shared tile map implemented and tested (2 targeted tests). Next: Place story, then Compare/About and central Delhi snapshot. Live tiles and browser interaction pending.
 - Done — M1 scaffold on `dev`, Python 3.12 venv, hash-locked development dependencies, credential exclusions, local Git hook and security notes.
 - Done — M2 SDK initialization with local login or deployment secrets, validated analysis inputs, offline tests and opt-in live smoke test.
 - Done — M3 lazy annual/summer composites for LST, NO₂, optical indices, Dynamic World, terrain and population.
