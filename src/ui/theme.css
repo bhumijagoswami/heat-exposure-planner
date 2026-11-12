@@ -1,30 +1,24 @@
-/* Keep the study area and map visible together on small screens. */
+#MainMenu, footer, [data-testid="stToolbar"] { display: none; }
 [data-testid="stMainBlockContainer"] {
-    max-width: 1480px;
-    padding-top: 3.25rem;
-    padding-bottom: 3rem;
+    max-width: 66rem;
+    padding: 2.4rem clamp(1rem, 4vw, 3.5rem) 4rem;
 }
 [data-testid="stMainBlockContainer"] h1 {
-    font-size: clamp(1.65rem, 2.7vw, 2.7rem);
-    line-height: 1.12;
-    letter-spacing: -0.03em;
+    background: linear-gradient(115deg, #193e43, #10292e);
+    border-left: .3rem solid #74b6a0;
+    border-radius: .6rem;
+    padding: clamp(1.4rem, 4vw, 3rem);
+    font-size: clamp(2rem, 5vw, 3.6rem);
+    line-height: 1.08;
+    letter-spacing: -.035em;
+    text-wrap: balance;
 }
+[data-testid="stMainBlockContainer"] h3 { margin-top: .7rem; line-height: 1.25; }
+[data-testid="stMarkdownContainer"] p { font-size: 1.05rem; line-height: 1.55; }
 [data-testid="stMetric"] {
-    background-color: #132a30;
+    background: #172d34;
+    border-top: .18rem solid #74b6a0;
+    padding: .8rem 1rem;
+    border-radius: .4rem;
 }
-@media (max-width: 640px) {
-    [data-testid="stMainBlockContainer"] { padding-top: 3.5rem; }
-    .st-key-overview_kpis [data-testid="stHorizontalBlock"] {
-        flex-wrap: nowrap;
-        gap: 0.4rem;
-    }
-    .st-key-overview_kpis [data-testid="stColumn"] {
-        min-width: 0;
-        width: auto;
-        flex: 1 1 0;
-    }
-    .st-key-overview_kpis [data-testid="stMetric"] { padding: 0; }
-    .st-key-overview_kpis [data-testid="stMetric"] > div { padding: 0.55rem; min-height: 5rem; }
-    .st-key-overview_kpis [data-testid="stMetricLabel"] p { font-size: 0.75rem; white-space: normal; }
-    .st-key-overview_kpis [data-testid="stMetricValue"] { font-size: 1.1rem; }
-}
+[data-testid="stMetricValue"] { font-variant-numeric: tabular-nums; }

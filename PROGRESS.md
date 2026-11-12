@@ -12,7 +12,7 @@
 - Done — M10 responsive seven-tab dashboard, overview KPIs, selectable four-layer map, methodology and offline Delhi/Bengaluru presets.
 - Done — M11 shared session cooldown, bounded Earth Engine transport, safe retry/error logs and offline/live failure-path QA.
 - Done — M12 README, desktop/mobile screenshots, architecture and methodology, Community Cloud setup, and a ten-question viva guide.
-- Checks — `make check` passes Ruff, 131 offline tests and Bandit. The release dependency audit found no known vulnerabilities. Run `gitleaks detect --redact` before every milestone commit.
+- Redesign QA — Final make check passed Ruff, 111 offline tests and Bandit; eight live tests excluded. Browser layout and live Earth Engine requests were not reverified.
 - Setup — Use `uv venv --python 3.12`, then `make install hooks`. The hook requires Gitleaks v8.24.3 on PATH or in `.local/bin`.
 - Decisions — Local project ID comes from `EE_PROJECT` in ignored `.env`. Local initialization delegates credential discovery to the SDK. Deployment accepts EE_SERVICE_ACCOUNT_JSON via environment or a supplied st.secrets mapping.
 - Decisions — Use the 2019–2025 analysis window. Reject grids conservatively using the buffered-circle area bound. Coordinate swaps are detectable only when a value violates its named axis range.

@@ -1,6 +1,6 @@
 [theme]
 base = "dark"
-primaryColor = "#62d8bb"
+primaryColor = "#87cbb6"
 backgroundColor = "#0b191e"
 secondaryBackgroundColor = "#172d34"
 textColor = "#e8f3ef"
@@ -11,6 +11,7 @@ gatherUsageStats = false
 
 [client]
 showErrorDetails = "none"
+toolbarMode = "minimal"
 
 [theme.sidebar]
 backgroundColor = "#10252b"
