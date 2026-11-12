@@ -19,7 +19,6 @@ from src.config import (
 from src.extract import extract_cells, ExtractionError
 from src.gee_auth import initialize_earth_engine, EarthEngineAuthError
 from src.index import score_exposure
-from src.model import InsufficientDriverData
 from src.validate import validate_inputs
 
 
@@ -73,29 +72,23 @@ def render_area_form():
             return
         if not begin_compute():
             return
-        st.session_state.pop("driver_result", None)
         st.session_state.pop("planner_input", None)
-        st.session_state.pop("planner_result", None)
         try:
             progress = st.progress(10, text="Extracting satellite observations…")
             try:
                 cells = _load_cells(request, season)
-                progress.progress(
-                    65, text="Scoring exposure…"
-                )
+                progress.progress(65, text="Scoring exposure…")
                 scored = score_exposure(cells)
                 st.session_state.planner_input = (request, season, scored)
                 progress.progress(100, text="Analysis complete")
             finally:
                 progress.empty()
-        except (InsufficientDriverData, ExtractionError, EarthEngineAuthError) as exc:
+        except (ExtractionError, EarthEngineAuthError) as exc:
             st.warning(str(exc))
             return
         except Exception as exc:
             logging.getLogger(__name__).warning(
                 "Area analysis failed (%s)", type(exc).__name__
             )
-            st.error("Driver analysis could not finish. Please retry.")
+            st.error("Area analysis could not finish. Please retry.")
             return
-
-
