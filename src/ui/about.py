@@ -9,7 +9,7 @@ from src.model import fit_drivers, InsufficientDriverData
 from src.planner import rank_sites, estimate_scenario
 from src.ui.limits import begin_compute
 from src.config import summer_months
-from src.demo import PRESETS
+from src.demo import DEMO_DIR, PRESETS
 from src.ui.places import HEAT, AIR, preset, mean
 import pandas as pd
 
@@ -23,7 +23,16 @@ def sensor_check(place):
     if readings.empty or pd.isna(surface):
         return f"{place.name}: too few summer observations for the sensor check."
     gap = surface - readings.mean()
-    return f"{place.name}: Landsat {surface:.1f} °C vs MODIS {readings.mean():.1f} °C across {len(readings)} available summer months ({abs(gap):.1f} °C apart)."
+    table = pd.read_csv(DEMO_DIR / "summer_landsat_monthly.csv")
+    matched = table.loc[table.place.eq(place.name)].dropna(
+        subset=["landsat_day_c", "modis_c"]
+    )
+    differences = matched.landsat_day_c - matched.modis_c
+    return (
+        f"{place.name}: the summer Landsat map averages {surface:.1f} °C; MODIS averages {readings.mean():.1f} °C across {len(readings)} observed summer months ({abs(gap):.1f} °C apart). "
+        f"Giving each of the {len(matched)} shared months equal weight, Landsat averages {matched.landsat_day_c.mean():.1f} °C and MODIS {matched.modis_c.mean():.1f} °C "
+        f"(Landsat minus MODIS: {differences.mean():+.1f} °C)."
+    )
 
 
 def render_about(place):
@@ -47,7 +56,12 @@ def render_about(place):
             try:
                 st.caption(sensor_check(preset(name)))
             except OSError:
-                st.caption(f"{name}: cached readings are unavailable for the sensor check.")
+                st.caption(
+                    f"{name}: cached readings are unavailable for the sensor check."
+                )
+        st.caption(
+            "Delhi’s gap persists even on the ground observed by both sensors (+7.6 °C). Bengaluru’s two shared months differ sharply: in June 2021 Landsat measured just 0.3% of the area, and both sensors covered less than 0.01% in common. Matching months does not match observation days or establish a citywide sensor bias."
+        )
         if place is None:
             return
         st.write(

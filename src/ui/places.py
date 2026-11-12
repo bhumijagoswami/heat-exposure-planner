@@ -115,11 +115,16 @@ def mean(cells, field):
 def monthly_line(places, field):
     heat = field == "roi_day_c"
     axis = "Surface temperature (°C)" if heat else "Nitrogen dioxide (µmol/m²)"
+    relative = heat and len(places) > 1
+    if relative:
+        axis = "Difference from this place’s observed average (°C)"
     frames = []
     for i, place in enumerate(places):
         values = place.months[field].reindex(
             pd.date_range("2019-01-01", "2021-12-01", freq="MS")
         ) * (1 if heat else 1_000_000)
+        if relative:
+            values = values - values.mean()
         frames.append(
             pd.DataFrame(
                 {
@@ -135,9 +140,14 @@ def monthly_line(places, field):
     data = pd.concat(frames)
     if data.Reading.notna().any():
         lo, hi = data.Reading.min(), data.Reading.max()
-        st.subheader(
-            f"Monthly {'surface temperature' if heat else 'nitrogen dioxide'} ranged from {lo:.1f} to {hi:.1f}"
-        )
+        if relative:
+            st.subheader(
+                "How warm was each month compared with this place’s own average?"
+            )
+        else:
+            st.subheader(
+                f"Monthly {'surface temperature' if heat else 'nitrogen dioxide'} ranged from {lo:.1f} to {hi:.1f}"
+            )
     else:
         st.info(f"No monthly readings for {axis}.")
         return
@@ -179,6 +189,11 @@ def monthly_line(places, field):
         )
     )
     st.altair_chart(year + line, width="stretch")
+    if relative:
+        st.caption(
+            "Source: Terra MODIS (MOD11A2), daytime surface temperature. Zero is each place’s mean across its observed months in January 2019–December 2021; gaps are missing observations and shading marks 2020."
+        )
+        return
     explanation = (
         " MODIS averages 1 km pixels that mix hot and cool surfaces. Cloud screening also leaves some summer months unobserved; both can contribute to lower readings than the finer Landsat map."
         if heat

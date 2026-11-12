@@ -50,3 +50,19 @@ def test_compare_custom_place_with_missing_observations(monkeypatch):
     assert not page.exception
     assert calls[0][0].start_year == 2019 and calls[0][1] == "summer"
     assert "No readings" in page.table[0].value.iloc[0].tolist()
+
+
+def test_compare_temperature_is_centered_within_each_place(monkeypatch):
+    from src.ui import places
+
+    selected = [places.preset(name) for name in PRESETS]
+    charts = []
+    monkeypatch.setattr(
+        places.st, "altair_chart", lambda chart, **kwargs: charts.append(chart)
+    )
+    places.monthly_line(selected, "roi_day_c")
+    points = charts[0].layer[1].data
+    for (_, observed), place in zip(points.groupby("Place"), selected):
+        raw = place.months.roi_day_c.dropna()
+        assert observed.Reading.tolist() == pytest.approx((raw - raw.mean()).tolist())
+        assert observed.Month.tolist() == raw.index.tolist()

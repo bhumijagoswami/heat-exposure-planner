@@ -1,5 +1,5 @@
 # Progress
-- Current UI — Six layers on both pages, shared physical scales and pooled Compare risk, full zone details, aligned land colours. Cached MODIS diagnosis in About; 114 offline tests, Ruff/Bandit and browser zone-popup check passed.
+- Summer sensor check — Matched-month Landsat minus MODIS: Delhi +7.9 °C (6 months), Bengaluru −9.0 °C (2 months; sparse June 2021). Compare plots MODIS relative to each local observed mean. Final make check: 115 passed, 8 live deselected, Ruff/Bandit passed.
 - Done — M1 scaffold on `dev`, Python 3.12 venv, hash-locked development dependencies, credential exclusions, local Git hook and security notes.
 - Done — M2 SDK initialization with local login or deployment secrets, validated analysis inputs, offline tests and opt-in live smoke test.
 - Done — M3 lazy annual/summer composites for LST, NO₂, optical indices, Dynamic World, terrain and population.
