@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 from shapely.geometry import mapping
 
+from src.zones import NO2_TO_MICROMOLES, hotspot_level, zone_directory
 from src.demo import PRESETS, load_demo
 from src.index import score_exposure
 from src.model import fit_drivers
@@ -14,7 +15,7 @@ from src.ui.drivers import render_area_form
 
 LIVE = "Custom live analysis"
 LAYERS = {
-    "Population-weighted exposure": (
+    "Hotspot score": (
         "exposure_equal",
         "Score (0–1)",
         "Equal-weight index · Landsat, Sentinel-5P, Sentinel-2 and WorldPop",
@@ -26,7 +27,7 @@ LAYERS = {
     ),
     "Nitrogen dioxide": (
         "no2_mol_m2",
-        "NO₂ (mol/m²)",
+        "NO₂ (µmol/m²)",
         "Sentinel-5P OFFL · tropospheric column",
     ),
     "Greenness": ("ndvi", "NDVI (−1 to 1)", "Sentinel-2 · vegetation index"),
@@ -82,6 +83,7 @@ def select_area():
 
 def _cell_chart(cells, layer):
     field, unit, source = LAYERS[layer]
+    zones = zone_directory(cells)
     records = []
     categorical = field == "robust_priority"
     for key, value, geom in cells[["cell_id", field, "geometry"]].itertuples(
@@ -97,7 +99,8 @@ def _cell_chart(cells, layer):
             {
                 "type": "Feature",
                 "geometry": mapping(geom),
-                "cell_id": key,
+                "zone": zones.at[key, "Zone"],
+                "level": hotspot_level(value),
                 "value": value,
             }
         )
@@ -120,7 +123,8 @@ def _cell_chart(cells, layer):
     chart = chart.encode(
         color=alt.condition("isValid(datum.value)", color, alt.value("#566169")),
         tooltip=[
-            alt.Tooltip("cell_id:N", title="Cell"),
+            alt.Tooltip("zone:N", title="Zone"),
+            alt.Tooltip("level:N", title="Hotspot level"),
             alt.Tooltip(
                 "value:N" if categorical else "value:Q",
                 title=unit,
@@ -132,6 +136,7 @@ def _cell_chart(cells, layer):
         title=layer, height=385
     )
     st.altair_chart(chart, width="stretch")
+    _map_takeaway(cells, field, unit)
     st.caption(f"{source}. Gray cells have insufficient data.")
 
 
@@ -170,9 +175,9 @@ def render_overview(name):
     )
     map_col, table_col = st.columns([1.1, 1], gap="medium")
     with map_col.container(border=True):
-        _cell_chart(cells, "Population-weighted exposure")
+        _cell_chart(cells, "Hotspot score")
     with table_col.container(border=True):
-        st.subheader("Highest exposure")
+        st.subheader("Highest hotspot scores")
         top = (
             cells.dropna(subset=["exposure_equal"])
             .sort_values(["exposure_equal", "cell_id"], ascending=[False, True])
@@ -181,37 +186,53 @@ def render_overview(name):
         if top.empty:
             st.info("No cells have all four exposure inputs.")
         else:
-            centers = top.geometry.centroid.to_crs(4326)
-            st.table(
+            zones = zone_directory(cells).loc[top.cell_id]
+            st.dataframe(
                 pd.DataFrame(
                     {
-                        "Cell centre": [
-                            f"{lat:.3f}°, {lon:.3f}°"
-                            for lat, lon in zip(centers.y, centers.x, strict=True)
-                        ],
+                        "Zone": zones.Zone.tolist(),
+                        "Google Maps": zones["Google Maps"].tolist(),
+                        "Level": top.exposure_equal.map(hotspot_level).tolist(),
                         "LST (°C)": [f"{v:.1f}" for v in top.lst_c],
-                        "Score": [f"{v:.3f}" for v in top.exposure_equal],
+                        "Hotspot score": [f"{v:.3f}" for v in top.exposure_equal],
                     }
                 ),
+                column_config={
+                    "Google Maps": st.column_config.LinkColumn(display_text="Open map")
+                },
                 hide_index=True,
             )
-            st.caption(
-                "Ranked by equal-weight, population-weighted exposure within this area."
-            )
+            st.caption("Ranked by Hotspot score within this area.")
+
+
+def _map_takeaway(cells, field, unit):
+    valid = cells.dropna(subset=[field])
+    if valid.empty:
+        st.caption("There are too few observations to compare zones on this layer.")
+    elif field == "robust_priority":
+        st.caption(
+            f"{int(valid[field].sum())} zones rank among the highest under every weighting scheme."
+        )
+    else:
+        high = valid.sort_values([field, "cell_id"], ascending=[False, True]).iloc[0]
+        zone = zone_directory(cells).at[high.cell_id, "Zone"]
+        value = high[field] * (NO2_TO_MICROMOLES if field == "no2_mol_m2" else 1)
+        st.caption(f"The highest reading is {value:.3g} ({unit}) in {zone}.")
 
 
 def render_map():
-    st.header("Cell map")
+    st.header("Zone map")
     active = st.session_state.get("planner_input")
     if active is None:
         st.info("Choose a study area to explore its cells.")
         return
     cells = active[2]
     layer = st.selectbox("Map layer", list(LAYERS))
-    st.caption("Select a cell on the map to inspect its observations.")
+    st.caption("Select a zone on the map to inspect its observations.")
     basemap = st.radio("Basemap", ["OpenStreetMap", "Satellite"], horizontal=True)
     field, unit, source = LAYERS[layer]
     render_grid_map(cells, field, unit, basemap)
+    _map_takeaway(cells, field, unit)
     st.caption(
         f"{source}. Gray means insufficient data. Background imagery requires internet."
     )
@@ -222,6 +243,9 @@ def render_methodology():
     st.subheader("How a cell is scored")
     st.write(
         "Within the selected area, we rank land-surface temperature anomalies, tropospheric NO₂ and vegetation deficit. The equal scheme averages those ranks. Each forward scheme doubles one factor. Multiplying hazard by population rank gives exposure. A robust-priority cell reaches the top quintile under all four schemes."
+    )
+    st.write(
+        "Hotspot scores use a 0–1 scale. Low is below 0.25, Moderate starts at 0.25, High at 0.50 and Very high at 0.75. These bands describe relative scores within the study area."
     )
     st.subheader("What the satellites measure")
     st.write(

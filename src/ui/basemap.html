@@ -8,7 +8,7 @@ aside{bottom:30px;left:8px}nav{top:8px;left:8px}output{top:8px;right:8px;white-s
 button{font:inherit;cursor:pointer}footer{bottom:2px;right:4px;font-size:11px}a{color:inherit}
 </style>
 <svg aria-label="Study area grid"></svg><nav><button aria-label="Zoom in">+</button> <button aria-label="Zoom out">−</button> <button>Fit area</button></nav>
-<aside></aside><output hidden><button aria-label="Close details">×</button> <span></span></output><footer><a target="_blank" rel="noopener noreferrer"></a></footer>
+<aside></aside><output hidden><button aria-label="Close details">×</button> <span></span><br><a target="_blank" rel="noopener noreferrer">Open in Google Maps</a></output><footer><a target="_blank" rel="noopener noreferrer"></a></footer>
 <script>
 const data=JSON.parse(atob("__DATA__")), svg=document.querySelector("svg"), popup=document.querySelector("output");
 const colors=["#440154","#3b528b","#21918c","#5ec962","#fde725"];
@@ -31,18 +31,19 @@ const lo=Math.min(...valid),hi=Math.max(...valid);
 const fmt=v=>v===null?"No data":Number(v.toPrecision(4)).toString();
 function color(v){
   if(v===null)return "#889197";
+  if(data.hotspot)return colors[[0,1,2,4][Math.min(3,Math.floor(v*4))]];
   if(data.priority)return v?colors[4]:colors[1];
   return colors[hi===lo?2:Math.min(4,Math.floor(5*(v-lo)/(hi-lo)))];
 }
 const legend=document.querySelector("aside");
 legend.textContent=data.unit+" ";
-const stops=data.priority?[0,1]:!valid.length?[]:hi===lo?[lo]:colors.map((_,i)=>lo+i*(hi-lo)/5);
+const stops=data.hotspot?[0,.25,.5,.75]:data.priority?[0,1]:!valid.length?[]:hi===lo?[lo]:colors.map((_,i)=>lo+i*(hi-lo)/5);
 for(const [i,v] of stops.entries()){
-  const chip=document.createElement("span");chip.style.color=data.priority||hi===lo?color(v):colors[i];
-  chip.textContent=" ■";legend.append(chip,data.priority?(v?" Priority":" Other"):fmt(v));
+  const chip=document.createElement("span");chip.style.color=data.hotspot||data.priority||hi===lo?color(v):colors[i];
+  chip.textContent=" ■";legend.append(chip,data.hotspot?[" Low"," Moderate"," High"," Very high"][i]:data.priority?(v?" Priority":" Other"):fmt(v));
 }
 if(!valid.length)legend.append("No data");
-else if(!data.priority&&hi!==lo)legend.append(" – "+fmt(hi));
+else if(!data.hotspot&&!data.priority&&hi!==lo)legend.append(" – "+fmt(hi));
 const credit=document.querySelector("footer a");
 credit.href=data.satellite?"https://www.esri.com/en-us/arcgis/products/arcgis-living-atlas":"https://www.openstreetmap.org/copyright";
 credit.textContent=data.satellite?"Imagery © Esri and imagery providers":"© OpenStreetMap contributors";
@@ -64,10 +65,11 @@ function draw(){
   }
   for(const row of data.rows){
     const d=row.rings.map(r=>r.map(([x,y],i)=>(i?"L":"M")+(x*size-ox).toFixed(1)+" "+(y*size-oy).toFixed(1)).join("")+"Z").join("");
-    const path=element("path",{d,fill:color(row.values[0]),"fill-rule":"evenodd",tabindex:0,"aria-label":"Cell "+row.id},svg);
+    const path=element("path",{d,fill:color(row.values[0]),"fill-rule":"evenodd",tabindex:0,"aria-label":row.id},svg);
     const show=()=>{
-      const labels=[data.unit,"Surface temperature (°C)","NO₂ (mol/m²)","Greenness (NDVI)","Exposure score"];
-      popup.querySelector("span").textContent="Cell "+row.id+"\n"+row.values.map((v,i)=>labels[i]+"  "+fmt(v)).join("\n");popup.hidden=false;
+      popup.querySelector("a").href=row.url;
+      const labels=["Surface temperature (°C)","NO₂ (µmol/m²)","Greenness (NDVI)","Hotspot score"];
+      popup.querySelector("span").textContent=row.id+"\n"+row.values.slice(1).map((v,i)=>labels[i]+"  "+fmt(v)).join("\n")+" ("+row.level+")";popup.hidden=false;
     };
     path.onclick=show;path.onkeydown=e=>{if(e.key==="Enter")show()};
   }

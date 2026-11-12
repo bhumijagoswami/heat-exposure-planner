@@ -6,6 +6,7 @@ import streamlit as st
 
 from .limits import begin_compute
 
+from src.zones import zone_directory, hotspot_level
 from src.index import SCHEMES
 from src.planner import MAX_SITES, estimate_scenario, rank_sites
 
@@ -36,19 +37,25 @@ def render_planner():
         st.info("No scored cells in this area meet the planting criteria.")
         return
     st.caption(
-        "Cumulative coverage is the share of summed exposure scores across all scored cells in the area."
+        "Cumulative coverage is the share of summed hotspot scores across all scored cells in the area."
     )
+    zones = zone_directory(cells)
+    display_sites = zones.loc[sites.index].join(sites)
+    display_sites["Level"] = display_sites.exposure.map(hotspot_level)
+    links = {"Google Maps": st.column_config.LinkColumn(display_text="Open map")}
     st.dataframe(
-        sites.rename(
+        display_sites.rename(
             columns={
                 "area_m2": "Cell area (m²)",
                 "dw_frac_bare": "Bare fraction",
                 "dw_frac_trees": "Tree fraction",
                 "open_fraction": "Plantable cover fraction",
-                "exposure": "Exposure score",
+                "exposure": "Hotspot score",
                 "cumulative_exposure_pct": "Cumulative exposure covered (%)",
             }
-        )
+        ),
+        hide_index=True,
+        column_config=links,
     )
     if "driver_result" not in st.session_state:
         st.info("Temperature scenarios require a fitted driver model for this area.")
@@ -86,14 +93,18 @@ def render_planner():
         st.session_state.planner_result = saved
     if saved is not None and saved[0] == key:
         st.dataframe(
-            saved[1].rename(
+            zones.loc[saved[1].index]
+            .join(saved[1])
+            .rename(
                 columns={
                     "converted_m2": "Converted area (m²)",
                     "delta_c": "ΔLST (°C)",
                     "lower_c": "95% lower (°C)",
                     "upper_c": "95% upper (°C)",
                 }
-            )
+            ),
+            hide_index=True,
+            column_config=links,
         )
         if saved[1].delta_c.isna().any():
             st.caption(

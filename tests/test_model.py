@@ -104,9 +104,9 @@ def test_drivers_screen(cells, monkeypatch):
         "Spatial CV R²",
         "Spatial CV RMSE (°C)",
     }
-    assert len(page.dataframe) == 2
-    next(widget for widget in page.selectbox if widget.label == "Cell ID").select(
+    assert len(page.tabs[2].dataframe) == 2
+    next(widget for widget in page.selectbox if widget.label == "Zone").select(
         "cell-150"
     ).run()
     assert not page.exception
-    assert len(page.dataframe[-1].value) == len(model.FEATURES)
+    assert len(page.tabs[2].dataframe[-1].value) == len(model.FEATURES)

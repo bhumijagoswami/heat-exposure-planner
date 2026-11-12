@@ -87,7 +87,7 @@ def test_brief_matches_tables_and_escapes_html():
     ):
         assert value in brief
     assert "test (0.200" not in brief
-    assert brief.index("1. Cell A") < brief.index("2. Cell B")
+    assert brief.index("1. Zone 1") < brief.index("2. Zone 2")
     html = HtmlText()
     html.feed(report.html())
     for _, paragraphs in report.sections:
@@ -137,7 +137,7 @@ def test_unknown_and_zero_population_and_stale_scenario():
     masked = cells.assign(exposure_equal=float("nan"), robust_priority=pd.NA)
     brief = build_report(masked, request(), "annual").markdown()
     assert (
-        "No cells have a valid exposure score" in brief
+        "No zones have a valid hotspot score" in brief
         and "could not be assessed" in brief
     )
     with pytest.raises(ValueError, match="Scenario cells"):

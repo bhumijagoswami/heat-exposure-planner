@@ -18,6 +18,7 @@ from src.config import (
 )
 from src.extract import extract_cells, ExtractionError
 from src.gee_auth import initialize_earth_engine, EarthEngineAuthError
+from src.zones import zone_directory
 from src.index import score_exposure
 from src.model import fit_drivers, InsufficientDriverData, predictor_label
 from src.validate import validate_inputs
@@ -131,8 +132,10 @@ def render_drivers():
         .rename("Mean absolute contribution (°C)")
         .rename_axis("Predictor")
     )
-    st.subheader("Explain a cell")
-    cell = st.selectbox("Cell ID", model.features.index)
+    st.subheader("Explore one zone")
+    zones = zone_directory(st.session_state.planner_input[2])
+    cell = st.selectbox("Zone", model.features.index, format_func=zones.Zone.get)
+    st.link_button("Open zone in Google Maps", zones.at[cell, "Google Maps"])
     local = model.explain_cell(cell)
     predicted = model.baseline_c + local.sum()
     st.write(

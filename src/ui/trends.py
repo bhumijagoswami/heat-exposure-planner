@@ -6,6 +6,8 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
+from src.zones import NO2_TO_MICROMOLES
+
 from .limits import begin_compute
 
 from src.config import (
@@ -160,6 +162,9 @@ def render_trends(offline=False):
         "Measurement", list(METRICS), format_func=lambda m: METRICS[m][0]
     )
     name, unit = METRICS[metric]
+    factor = NO2_TO_MICROMOLES if metric == "no2" else 1
+    if metric == "no2":
+        unit = "µmol/m²"
     source = "Sentinel-5P OFFL" if metric == "no2" else "Terra MODIS MOD11A2"
     st.caption(
         f"{request.lat:.4f}°, {request.lon:.4f}° · {request.radius_km:g} km · "
@@ -180,19 +185,31 @@ def render_trends(offline=False):
         st.info(trend.note)
     else:
         a, b = st.columns(2)
-        a.metric("Sen’s slope", f"{trend.slope_per_year:.4g} {unit}/year")
-        b.metric("Mann–Kendall p-value", f"{trend.p_value:.3g}")
+        a.metric(
+            "Estimated yearly change",
+            f"{trend.slope_per_year * factor:.4g} {unit}/year",
+        )
+        direction = "upward" if trend.slope_per_year > 0 else "downward"
+        finding = f"The readings are trending {direction}."
+        b.write(
+            finding
+            if trend.p_value < 0.05 and trend.slope_per_year != 0
+            else "No clear trend."
+        )
     if 2020 in monthly.index.year:
         st.caption(
             "Shading marks 2020 for lockdown context. Local restrictions varied within the year."
         )
     _chart(
-        pd.DataFrame({"Observed": obs, "Deseasonalized": trend.adjusted}),
+        pd.DataFrame({"Observed": obs, "Seasonally adjusted": trend.adjusted}) * factor,
         f"{name} across the area",
         unit,
         source,
     )
-    rolling = rolling_comparison(monthly, metric)
+    st.caption(
+        f"Observed monthly readings ranged from {obs.min() * factor:.3g} to {obs.max() * factor:.3g} {unit}."
+    )
+    rolling = rolling_comparison(monthly, metric) * factor
     if rolling.notna().any().any():
         _chart(
             rolling,
@@ -200,6 +217,16 @@ def render_trends(offline=False):
             unit,
             f"{source} · Dynamic World",
         )
+        paired = rolling.dropna()
+        if paired.empty:
+            st.caption(
+                "The two land-cover groups have no overlapping three-month readings."
+            )
+        else:
+            gap = paired.iloc[-1, 0] - paired.iloc[-1, 1]
+            st.caption(
+                f"In {paired.index[-1]:%B %Y}, the two groups differed by {abs(gap):.3g} {unit}."
+            )
     else:
         st.info("Neither land-cover group has three consecutive observed months.")
     st.caption(

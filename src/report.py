@@ -7,6 +7,7 @@ from io import BytesIO
 import geopandas as gpd
 import pandas as pd
 
+from .zones import hotspot_level, zone_directory
 from .config import WORLDPOP_YEAR
 from .model import DriverModel, predictor_label
 from .planner import rank_sites
@@ -97,7 +98,8 @@ def build_report(
     sites = rank_sites(cells, scheme, top_n)
     # A projected centroid stays inside each convex clipped square.
     centers = cells.geometry.centroid.to_crs(4326)
-    located = cells.assign(latitude=centers.y, longitude=centers.x)
+    zones = zone_directory(cells)
+    located = cells.assign(latitude=centers.y, longitude=centers.x).join(zones, on="cell_id")
     score = f"exposure_{scheme}"
     ranked = located.dropna(subset=[score]).sort_values(
         [score, "cell_id"], ascending=[False, True]
@@ -111,10 +113,10 @@ def build_report(
         f"Centre {request.lat:.4f}°, {request.lon:.4f}°. Radius {request.radius_km:g} km. "
         f"{request.cell_size_m} m grid. {season.capitalize()} observations, "
         f"{request.start_year}–{request.end_year}. The {scheme.replace('_', ' ')} scheme is shown. "
-        f"{len(ranked)} of {len(cells)} cells have exposure scores. Joint valid-area coverage is {coverage:.1f}%."
+        f"{len(ranked)} of {len(cells)} cells have hotspot scores. Joint valid-area coverage is {coverage:.1f}%."
     )
     hotspots = [
-        f"{i}. Cell {cell} ({lat:.4f}°, {lon:.4f}°) has a population-weighted exposure score of {value:.4f}."
+        f"{i}. {zones.at[cell, 'Zone']} ({lat:.4f}°, {lon:.4f}°) has a Hotspot score of {value:.4f} ({hotspot_level(value)})."
         for i, (cell, lat, lon, value) in enumerate(
             ranked[["cell_id", "latitude", "longitude", score]]
             .head(5)
@@ -141,12 +143,12 @@ def build_report(
         first = sites.index[0]
         cumulative = sites.cumulative_exposure_pct.iloc[-1]
         share = (
-            f"Together they cover {cumulative:.1f}% of summed area exposure scores."
+            f"Together they cover {cumulative:.1f}% of summed area hotspot scores."
             if pd.notna(cumulative)
             else "Exposure coverage is undefined because the total score is zero."
         )
         plan = [
-            f"The selected list contains {len(sites)} planting sites. Cell {first} ranks first. {share}"
+            f"The selected list contains {len(sites)} planting sites. {zones.at[first, 'Zone']} ranks first. {share}"
         ]
         if scenario is None:
             plan.append(
@@ -165,7 +167,7 @@ def build_report(
                 cell = available.index[0]
                 row = available.iloc[0]
                 plan.append(
-                    f"For cell {cell}, predicted ΔLST is {row.delta_c:+.2f} °C "
+                    f"For {zones.at[cell, 'Zone']}, predicted ΔLST is {row.delta_c:+.2f} °C "
                     f"(95% spatial bootstrap interval {row.lower_c:+.2f} to {row.upper_c:+.2f} °C)."
                 )
             else:
@@ -190,7 +192,7 @@ def build_report(
         export,
         [
             ("Analysis area", [area]),
-            ("Highest exposure", hotspots or ["No cells have a valid exposure score."]),
+            ("Highest hotspot scores", hotspots or ["No zones have a valid hotspot score."]),
             ("Robust-priority population", [_population_text(cells)]),
             ("Temperature drivers", drivers),
             ("Intervention plan", plan),

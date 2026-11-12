@@ -148,6 +148,6 @@ def test_small_area_keeps_site_ranking_in_app(monkeypatch):
     next(b for b in page.button if b.label == "Analyze area").click().run()
     assert not page.exception
     assert any("150 complete cells" in w.value for w in page.warning)
-    assert len(page.dataframe) == 1
-    assert "Cumulative exposure covered (%)" in page.dataframe[0].value
+    assert len(page.tabs[4].dataframe) == 1
+    assert "Cumulative exposure covered (%)" in page.tabs[4].dataframe[0].value
     assert any("require a fitted driver model" in info.value for info in page.info)

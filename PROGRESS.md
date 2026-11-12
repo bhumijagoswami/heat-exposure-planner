@@ -36,3 +36,4 @@
 - Release QA — Ten live tests passed. Python 3.12 Linux wheel resolution passed with required hashes. Hosted secrets, missing secrets and malformed configuration are covered offline.
 - Handoff — Deployment instructions are in README.md. Rotate any deployment service-account key after grading using SECURITY.md.
 - UI step 1 — Map opens first with OSM/Esri imagery, five selectable grid layers, legend and click details. Dashboard tests and offline Chrome interaction checks passed; live tile delivery unverified.
+- UI step 2 — Seven tab reading guides, chart takeaways, shared zone names and Google Maps links, hotspot bands, µmol/m² NO₂ and plain-language trend findings. Seven targeted offline tests passed.

@@ -93,15 +93,15 @@ def test_trends_screen(monkeypatch):
         button for button in page.button if button.label == "Load monthly trends"
     ).click().run()
     assert not page.exception
-    assert next(m for m in page.metric if m.label == "Sen’s slope").value.endswith(
+    assert next(m for m in page.metric if m.label == "Estimated yearly change").value.endswith(
         "°C/year"
     )
     assert any("2020" in cap.value for cap in page.caption)
     assert len(page.get("vega_lite_chart")) == 2
     next(w for w in page.selectbox if w.label == "Measurement").select("no2").run()
     assert not page.exception
-    assert next(m for m in page.metric if m.label == "Sen’s slope").value.endswith(
-        "mol/m²/year"
+    assert next(m for m in page.metric if m.label == "Estimated yearly change").value.endswith(
+        "µmol/m²/year"
     )
 
 

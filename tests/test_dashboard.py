@@ -36,6 +36,9 @@ def test_switch_presets_and_layers_without_earth_engine(monkeypatch):
         "Briefing",
         "Methodology & Limits",
     ]
+    assert all(
+        any("How to read this" in box.value for box in tab.info) for tab in page.tabs
+    )
     for name in PRESETS:
         page.sidebar.selectbox[0].select(name).run()
         request, _, scored = page.session_state.planner_input
