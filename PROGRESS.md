@@ -1,5 +1,5 @@
 # Progress
-- Summer sensor check — Matched-month Landsat minus MODIS: Delhi +7.9 °C (6 months), Bengaluru −9.0 °C (2 months; sparse June 2021). Compare plots MODIS relative to each local observed mean. Final make check: 115 passed, 8 live deselected, Ruff/Bandit passed.
+- Cloud readiness — Verified Python 3.12 Linux wheel installation from hashed requirements.txt, mocked hosted authentication and offline presets. Final make check: 116 passed, 8 live deselected; audit, full-history secret scan and tracked-name check clean. No deployment or live auth performed.
 - Done — M1 scaffold on `dev`, Python 3.12 venv, hash-locked development dependencies, credential exclusions, local Git hook and security notes.
 - Done — M2 SDK initialization with local login or deployment secrets, validated analysis inputs, offline tests and opt-in live smoke test.
 - Done — M3 lazy annual/summer composites for LST, NO₂, optical indices, Dynamic World, terrain and population.

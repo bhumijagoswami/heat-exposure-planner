@@ -11,7 +11,14 @@ def test_bundled_snapshots(name):
     assert cells.lst_c.notna().any() and cells.population.sum() > 0
 
 
-def test_story():
+def test_story(monkeypatch):
+    from src.ui import drivers
+
+    monkeypatch.setattr(
+        drivers,
+        "initialize_app_earth_engine",
+        lambda: pytest.fail("Preset requested credentials"),
+    )
     from streamlit.testing.v1 import AppTest
 
     app = AppTest.from_file("../app.py", default_timeout=30).run()
@@ -19,7 +26,7 @@ def test_story():
     assert not app.exception
     assert len(app.metric) == 3
     assert len(app.get("iframe")) == 1
-    assert sum("Monthly area averages" in c.value for c in app.caption) == 2
+    assert sum("Source: Terra MODIS" in c.value for c in app.caption) == 1
     assert any("5 zones to check first" == item.value for item in app.subheader)
 
 
@@ -40,8 +47,6 @@ def test_compare_custom_place_with_missing_observations(monkeypatch):
     page = AppTest.from_file("../app.py").run()
     page.radio[0].set_value("Compare two places").run()
     assert not page.exception and len(page.get("iframe")) == 2
-    assert any("7.5 °C apart" in item.value for item in page.caption)
-    assert any("7.5 °C apart" in item.value for item in page.expander[-1].caption)
     page.radio[1].set_value("Combined risk").run()
     assert not page.exception and len(page.get("iframe")) == 2
     assert page.table[0].value.shape == (6, 2)

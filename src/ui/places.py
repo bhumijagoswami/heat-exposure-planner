@@ -81,7 +81,7 @@ def choose_place(label, index, key, custom_radius=False):
             saved = st.session_state.get(key + "_result")
             if st.button("Analyze area", key=key + "_run") and begin_compute():
                 try:
-                    with st.spinner("Loading satellite observations…"):
+                    with st.spinner("Fetching satellite data, about 1–2 minutes"):
                         result = Place(
                             f"{lat:.2f}°, {lon:.2f}°",
                             request,
@@ -95,7 +95,7 @@ def choose_place(label, index, key, custom_radius=False):
                         "Live request failed (%s)", type(exc).__name__
                     )
                     st.warning(
-                        "Live Earth Engine data is unavailable. Choose a saved place or try again later."
+                        "Earth Engine could not finish the request. Try again later, or turn off custom coordinates to use a saved place."
                     )
                     return None
             return saved if saved and saved.request == request else None
@@ -114,16 +114,18 @@ def mean(cells, field):
 
 def monthly_line(places, field):
     heat = field == "roi_day_c"
-    axis = "Surface temperature (°C)" if heat else "Nitrogen dioxide (µmol/m²)"
-    relative = heat and len(places) > 1
-    if relative:
-        axis = "Difference from this place’s observed average (°C)"
+    axis = (
+        "Difference from this place’s observed average (°C)"
+        if heat
+        else "Nitrogen dioxide (µmol/m²)"
+    )
+
     frames = []
     for i, place in enumerate(places):
         values = place.months[field].reindex(
             pd.date_range("2019-01-01", "2021-12-01", freq="MS")
         ) * (1 if heat else 1_000_000)
-        if relative:
+        if heat:
             values = values - values.mean()
         frames.append(
             pd.DataFrame(
@@ -140,14 +142,12 @@ def monthly_line(places, field):
     data = pd.concat(frames)
     if data.Reading.notna().any():
         lo, hi = data.Reading.min(), data.Reading.max()
-        if relative:
+        if heat:
             st.subheader(
                 "How warm was each month compared with this place’s own average?"
             )
         else:
-            st.subheader(
-                f"Monthly {'surface temperature' if heat else 'nitrogen dioxide'} ranged from {lo:.1f} to {hi:.1f}"
-            )
+            st.subheader(f"Monthly nitrogen dioxide ranged from {lo:.1f} to {hi:.1f}")
     else:
         st.info(f"No monthly readings for {axis}.")
         return
@@ -189,16 +189,11 @@ def monthly_line(places, field):
         )
     )
     st.altair_chart(year + line, width="stretch")
-    if relative:
+    if heat:
         st.caption(
             "Source: Terra MODIS (MOD11A2), daytime surface temperature. Zero is each place’s mean across its observed months in January 2019–December 2021; gaps are missing observations and shading marks 2020."
         )
         return
-    explanation = (
-        " MODIS averages 1 km pixels that mix hot and cool surfaces. Cloud screening also leaves some summer months unobserved; both can contribute to lower readings than the finer Landsat map."
-        if heat
-        else ""
-    )
     st.caption(
-        f"Monthly area averages · {'MODIS · ' + HEAT if heat else 'Sentinel-5P · ' + AIR} · January 2019–December 2021 · shaded 2020: Lockdown year: pollution fell sharply.{explanation}"
+        f"Monthly area averages · Sentinel-5P · {AIR} · January 2019–December 2021 · shaded 2020: Lockdown year: pollution fell sharply."
     )

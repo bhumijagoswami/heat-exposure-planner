@@ -40,11 +40,14 @@ def initialize_earth_engine(secrets: Mapping[str, str] | None = None) -> None:
     """Pass st.secrets on Streamlit Cloud. Environment values override local .env."""
     message = "Could not read Earth Engine settings. Check the deployment secrets or local .env."
     try:
-        settings = ChainMap(
-            secrets if secrets is not None else {},
-            os.environ,
-            dotenv_values(_ENV_FILE, interpolate=False),
-        )
+        settings = ChainMap(secrets or {}, os.environ)
+        # A configured deployment needs no local dotenv or SDK credential discovery.
+        if secrets is None and not {"EE_PROJECT", "EE_SERVICE_ACCOUNT_JSON"}.issubset(
+            settings
+        ):
+            settings = ChainMap(
+                *settings.maps, dotenv_values(_ENV_FILE, interpolate=False)
+            )
         project = settings.get("EE_PROJECT")
         if not isinstance(project, str) or not project.strip():
             raise EarthEngineAuthError(

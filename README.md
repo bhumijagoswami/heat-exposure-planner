@@ -77,12 +77,18 @@ Live runs are capped at 2,500 cells and use batches of at most 500. A smaller ra
 ## Streamlit Community Cloud
 
 1. Make the reviewed code and both Parquet presets available in a GitHub repository that Community Cloud can access. Keep `.env`, real secrets TOML and key files out of Git.
-2. In Community Cloud, choose **Create app**, select the repository, select `simplify` (or your release branch containing these files), and enter `app.py` as the entrypoint. In **Advanced settings**, choose **Python 3.12**. Community Cloud installs the root `requirements.txt`. [Deployment guide](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy) · [Dependency resolution](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/app-dependencies)
-3. The offline presets need no secrets. For live computation, give a dedicated service account **Earth Engine Resource Viewer** and **Service Usage Consumer** on the registered project. In **Secrets**, supply the two root-level settings from the template below. Replace both placeholders in the dashboard. Paste the complete service-account JSON as a TOML literal string, preserving the JSON’s escaped newlines. [Secrets template](.streamlit/secrets.toml.example) · [Cloud secrets guide](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management)
+2. In Community Cloud, choose **Create app**, select the repository, select `simplify` (or your release branch containing these files), and enter `app.py` as the entrypoint. In **Advanced settings**, choose **Python 3.12**. Community Cloud installs the exact, hash-locked packages from the root `requirements.txt`. [Deployment guide](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/deploy) · [Dependency resolution](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/app-dependencies)
+3. The offline presets need no secrets. For live computation, give a dedicated service account **Earth Engine Resource Viewer** and **Service Usage Consumer** on the registered project. In **Secrets**, supply the two root-level settings from the template below. Replace the project ID and the entire example JSON object in the dashboard. Paste the complete service-account JSON as a TOML literal string, preserving the JSON’s escaped newlines. [Secrets template](.streamlit/secrets.toml.example) · [Cloud secrets guide](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management)
 
    ```toml
-   EE_PROJECT = "your-project-id"
-   EE_SERVICE_ACCOUNT_JSON = '''replace-with-complete-service-account-json'''
+   EE_PROJECT = "YOUR_EARTH_ENGINE_PROJECT_ID"
+   EE_SERVICE_ACCOUNT_JSON = '''{
+     "type": "service_account",
+     "project_id": "YOUR_SERVICE_ACCOUNT_PROJECT_ID",
+     "private_key": "YOUR_PRIVATE_KEY_FROM_THE_JSON",
+     "client_email": "YOUR_SERVICE_ACCOUNT_EMAIL",
+     "token_uri": "YOUR_TOKEN_URI_FROM_THE_JSON"
+   }'''
    ```
 
 4. Choose **Deploy**. Confirm a preset map opens, then try a small custom ROI if live access is configured. On an authorization error, verify project registration, API enablement, roles and secret formatting. After grading, rotate the deployment key, restart with the replacement, verify a live request and revoke the old key. [Key handling](SECURITY.md)
