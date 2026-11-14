@@ -197,3 +197,71 @@ def monthly_line(places, field):
     st.caption(
         f"Monthly area averages · Sentinel-5P · {AIR} · January 2019–December 2021 · shaded 2020: Lockdown year: pollution fell sharply."
     )
+
+
+def monthly_heat_no2(places):
+    """Compare matched monthly heat and NO₂ as standardized anomalies."""
+    frames = []
+    months = pd.date_range("2019-01-01", "2021-12-01", freq="MS")
+    for i, place in enumerate(places):
+        values = place.months.reindex(months)
+        label = place.name if len(places) == 1 else f"{'AB'[i]} · {place.name}"
+        for field, series_name in (("roi_day_c", "Heat"), ("roi_no2", "NO₂")):
+            series = values[field]
+            spread = series.std()
+            if pd.notna(spread) and spread > 0:
+                anomaly = (series - series.mean()) / spread
+            else:
+                anomaly = series * float("nan")
+            frames.append(
+                pd.DataFrame(
+                    {
+                        "Month": months,
+                        "Standard deviations from average": anomaly.to_numpy(),
+                        "Place": label,
+                        "Measure": series_name,
+                    }
+                )
+            )
+    data = pd.concat(frames, ignore_index=True)
+    if data["Standard deviations from average"].notna().sum() < 2:
+        st.info(
+            "There are not enough matching monthly heat and NO₂ readings to compare."
+        )
+        return
+    st.subheader("Did heat and NO₂ rise and fall together?")
+    chart = (
+        alt.Chart(data)
+        .mark_line(point=True)
+        .encode(
+            x=alt.X("Month:T", title="Month", axis=alt.Axis(format="%b %y")),
+            y=alt.Y(
+                "Standard deviations from average:Q",
+                title="Distance from each measure’s own average (standard deviations)",
+                scale=alt.Scale(zero=False),
+            ),
+            color=alt.Color(
+                "Measure:N",
+                scale=alt.Scale(domain=["Heat", "NO₂"], range=[COLORS[0], "#38bdf8"]),
+            ),
+            strokeDash=alt.StrokeDash(
+                "Place:N",
+                legend=alt.Legend(
+                    title="Place", orient="bottom", columns=1, labelLimit=0
+                ),
+            )
+            if len(places) > 1
+            else alt.value([1, 0]),
+            detail=["Place", "Measure"],
+            tooltip=[
+                alt.Tooltip("Month:T", format="%b %Y"),
+                "Place:N",
+                "Measure:N",
+                alt.Tooltip("Standard deviations from average:Q", format="+.2f"),
+            ],
+        )
+    )
+    st.altair_chart(chart, width="stretch")
+    st.caption(
+        "Heat is Terra MODIS daytime land-surface temperature; NO₂ is Sentinel-5P column density. Both are centered and scaled to their own observed monthly averages, so compare timing and direction, not absolute amounts. Missing satellite observations are omitted; sensors have different footprints and overpass times."
+    )

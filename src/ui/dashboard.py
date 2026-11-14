@@ -14,7 +14,16 @@ from src.ui.basemap import (
     render_map,
     select_markers,
 )
-from src.ui.places import AIR, HEAT, LAND, choose_place, mean, monthly_line, preset
+from src.ui.places import (
+    AIR,
+    HEAT,
+    LAND,
+    choose_place,
+    mean,
+    monthly_heat_no2,
+    monthly_line,
+    preset,
+)
 
 ACTIONS = {
     "Hot and treeless": "Add shade trees or shade structures and use cooler paving.",
@@ -124,6 +133,7 @@ def render_story():
     land_chart(place)
     for field in ["roi_day_c", "roi_no2"]:
         monthly_line([place], field)
+    monthly_heat_no2([place])
     other = next(name for name in PRESETS if name != place.name)
     try:
         reference = mean(preset(other).cells, "no2_mol_m2")
