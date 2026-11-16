@@ -14,7 +14,9 @@ from src.ui.basemap import (
     render_map,
     select_markers,
 )
-from src.ui.places import AIR, HEAT, LAND, choose_place, mean, monthly_line, preset
+from src.ui.places import LAND, choose_place, mean, monthly_line, preset
+from src.ui.planting import render_planting
+from src.ui.score import render_score_card
 
 ACTIONS = {
     "Hot and treeless": "Add shade trees or shade structures and use cooler paving.",
@@ -74,7 +76,7 @@ def land_chart(place):
     labels = base.mark_text(align="left", dx=4).encode(text="Label:N")
     st.altair_chart(bars + labels, width="stretch")
     st.caption(
-        f"Average temperature by dominant land type (five or more zones) · Landsat 8/9, {HEAT}; Dynamic World (10 m) · {place.window}."
+        "Bars compare each land type with the area average, using groups of at least five zones · Landsat · Dynamic World · summer 2019–21."
     )
 
 
@@ -94,13 +96,14 @@ def render_story():
     st.info(
         f"**{highest.sum()} zones** have the highest combined risk, with about **{residents:,.0f} residents**."
     )
+    render_score_card()
     layer = st.radio("Map layer", list(LAYERS), horizontal=True)
     keys = select_markers(cells)
     render_map(
         cells,
         layer=layer,
         keys=keys,
-        caption=f"{layer} and first-action zones · Landsat 8/9 ({HEAT}), Sentinel-5P ({AIR}), Sentinel-2, Dynamic World (10 m), WorldPop (2020) · {place.window}.",
+        caption="Use the legend to read zones and numbered places to check first · Landsat · Sentinel-5P · Sentinel-2 · Dynamic World · WorldPop.",
     )
     for column, label, value in zip(
         st.columns(3),
@@ -117,10 +120,14 @@ def render_story():
     ):
         column.metric(label, value)
     st.subheader(f"{len(keys)} zones to check first")
+    st.write(
+        "Start with these high-risk zones, then check access and conditions on site."
+    )
     for record in marker_records(indexed, keys):
-        with st.container(border=True):
+        with st.container(border=True, key=f"zone_card_{record['number']}"):
             st.markdown(f"**Zone {record['number']} · {record['tag']}**")
             st.write(ACTIONS[record["tag"]])
+    render_planting(place, cells)
     land_chart(place)
     for field in ["roi_day_c", "roi_no2"]:
         monthly_line([place], field)

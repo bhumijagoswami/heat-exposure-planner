@@ -19,4 +19,4 @@ if page == "Heat vs pollution":
     render_equations()
 else:
     place = render_story() if page == "Place story" else render_comparison()
-    render_about(place)
+    render_about(include_score=page == "Compare two places")

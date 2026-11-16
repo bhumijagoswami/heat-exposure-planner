@@ -1,6 +1,7 @@
 # Progress
 - Final A — Created final from main; preserved prior manual files in stash. Replaced wrong-app imports with working entrypoint and offline Heat vs pollution page using real map scoring.
-- Final A QA — 12 targeted tests passed (both cities, all views, safe chart errors); all supplied regression checks match rounding. Next: B story/About polish, then C Compare trim; no live tests, audit, secret scan or push requested.
+- Final A QA — 12 targeted tests passed (both cities, all views, safe chart errors); all supplied regression checks match rounding. Next: C Compare trim; no live tests, audit, secret scan or push requested.
+- Final B — Added one score card per page, moved retained planting estimates and per-site 95% ranges into Place story, rewrote About and equations Q&A; 13 targeted tests passed, including real RF/bootstrap runs for both cities. Mobile formula and card checked at 390 px.
 - Prior UI QA — Map/story/Compare redesign and land-use flags: 134 offline tests passed; legacy live checks and release scans were clean.
 - Cloud readiness — Verified Python 3.12 Linux wheel installation from hashed requirements.txt, mocked hosted authentication and offline presets. Final make check: 116 passed, 8 live deselected; audit, full-history secret scan and tracked-name check clean. No deployment or live auth performed.
 - Done — M1 scaffold on `dev`, Python 3.12 venv, hash-locked development dependencies, credential exclusions, local Git hook and security notes.

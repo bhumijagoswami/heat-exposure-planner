@@ -22,4 +22,12 @@ Place story uses equal weights, observed temperatures by dominant land type, and
 
 10. **What can you demonstrate if Earth Engine is unavailable?** Both city presets contain satellite-derived observations in Parquet. The story, numbered map, land-type and monthly charts, planting estimates and two-place comparison work offline after installation. Live requests add authentication, input and grid limits, bounded batches, cache limits, a shared cooldown and bounded retries. WorldPop’s fixed 2020 baseline and variable live latency remain limitations.
 
-**Why compare the hottest tenth with its own area?** Central Delhi and Bengaluru have different climates. Subtracting each place’s average highlights local contrast. Compare also checks Landsat against MODIS in the same summer months; central Delhi differed by 7.5 °C with six valid MODIS months.
+**Why compare the hottest tenth with its own area?** Central Delhi and Bengaluru have different climates. Subtracting each place’s average highlights local contrast. Landsat and MODIS differed by 7.5 °C across Delhi's available summer observations, so their temperatures are not interchangeable.
+
+**What is the exact risk equation?** Hazard is the mean of heat rank, NO₂ rank and `1 − rank(NDVI)`; risk multiplies hazard by population rank. A rank is `(average_rank − 0.5) / count`, with ties averaged and zero residents forced to zero risk. The same scoring function drives the map and equation page; map markers also enforce spacing and land-use checks.
+
+**How do you read the built-up/tree equation?** OLS fits `LST = intercept + built coefficient × built fraction + tree coefficient × tree fraction`. Multiply a coefficient by 0.10 for ten percentage points with the other fraction fixed: built-up associates with +0.276 °C in Delhi and +0.344 °C in Bengaluru; trees associate with −0.247 °C and −0.173 °C. R² describes explained variation; neither coefficient proves cause.
+
+**Do hotter places have more NO₂?** Between zones, almost no relationship appears (R² 0.032 Delhi, 0.039 Bengaluru). Across paired months Delhi has a strong negative association (slope −8.536 µmol/m² per °C, R² 0.598, n=29); Bengaluru's is almost absent (−1.734, R² 0.043, n=23). NO₂ is coarse and seasonal: subtracting each calendar-month mean from both variables, using at least two paired observations per month, checks the seasonal contribution. The monthly comparison uses MODIS; zones use Landsat.
+
+**Why might a planting result say inconclusive?** Its spatial bootstrap interval includes zero, so the estimate does not establish cooling. The cards use the highest-risk modelled candidate and its own interval; the table keeps each site's estimate separate, and results persist until the selected observations change.

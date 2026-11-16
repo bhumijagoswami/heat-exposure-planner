@@ -13,7 +13,12 @@
     letter-spacing: -.035em;
     text-wrap: balance;
 }
-[data-testid="stMainBlockContainer"] h3 { margin-top: .7rem; line-height: 1.25; }
+[data-testid="stMainBlockContainer"] h3 {
+    margin-top: 1.3rem;
+    padding-bottom: .25rem;
+    line-height: 1.25;
+    text-wrap: balance;
+}
 [data-testid="stMarkdownContainer"] p { font-size: 1.05rem; line-height: 1.55; }
 [data-testid="stMetric"] {
     background: #172d34;
@@ -22,3 +27,36 @@
     border-radius: .4rem;
 }
 [data-testid="stMetricValue"] { font-variant-numeric: tabular-nums; }
+[data-testid="stMetricValue"] > div {
+    font-size: clamp(1.25rem, 2.6vw, 2rem);
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+.st-key-risk_score_card, [class*="st-key-zone_card_"] {
+    background: #14282f;
+    border-color: #2d454b !important;
+    border-radius: .6rem;
+    padding: 1rem 1.2rem;
+}
+[data-testid="stExpander"] details {
+    border-color: #2d454b;
+    border-radius: .6rem;
+}
+[data-testid="stCaptionContainer"] p {
+    color: #afc0c5;
+    font-size: .85rem;
+    line-height: 1.45;
+}
+.katex-display {
+    max-width: 100%;
+    overflow-x: auto;
+    padding-block: .35rem;
+}
+[data-testid="stTable"] { overflow-x: auto; }
+@media (max-width: 600px) {
+    [data-testid="stMainBlockContainer"] { padding: 1rem .85rem 2rem; }
+    [data-testid="stHorizontalBlock"] { flex-wrap: wrap; gap: .8rem; }
+    [data-testid="stColumn"] { min-width: min(100%, 20rem); flex: 1 1 100%; }
+    .katex-display .katex { font-size: .9rem; }
+    [data-testid="stRadio"] [role="radiogroup"] { flex-wrap: wrap; }
+}

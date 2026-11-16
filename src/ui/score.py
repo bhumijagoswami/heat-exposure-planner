@@ -7,7 +7,7 @@ def render_score_formula():
     st.latex(
         r"\begin{aligned}\text{Hazard} &= \tfrac13\text{Heat}"
         r"+\tfrac13\text{Air pollution (NO}_2\text{)}"
-        r"+\tfrac13\text{Lack of greenery}\\"
+        r"\\&+\tfrac13\text{Lack of greenery}\\"
         r"\text{Risk} &= \text{Hazard}\times\text{Population rank}\end{aligned}"
     )
     st.write("**Heat:** the zone's surface-temperature rank; hotter zones rank higher.")
@@ -30,3 +30,17 @@ def render_rank_detail():
         "The map uses zones with all three hazard readings and valid area, then ranks population "
         "where hazard, population and joint coverage are available; missing scores stay unknown."
     )
+
+
+def render_score_card():
+    with st.container(border=True, key="risk_score_card"):
+        st.subheader("How the risk score works")
+        st.write(
+            "Three equal shares describe the hazard; population rank gives residents more weight."
+        )
+        render_score_formula()
+        st.write(
+            "**Population:** more residents increase the weight; zero residents means zero risk."
+        )
+        with st.expander("More detail"):
+            render_rank_detail()

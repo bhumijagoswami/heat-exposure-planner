@@ -41,6 +41,12 @@ The SDK reuses an existing Earth Engine login. For a first login, run `.venv/bin
 
 ## How to read the results
 
+**How is risk calculated?** Hazard = ⅓ heat rank + ⅓ NO₂ rank + ⅓ lack of greenery; risk = hazard × population rank. Every rank is `(average_rank − 0.5) / count`, with ties sharing a rank; lack of greenery is `1 − rank(NDVI)`, and zero residents means zero risk. The score card explains this once per page. The Heat vs pollution page uses the same scoring function as the map; its top-ten bars show hazard contributions before population weighting. Numbered map markers also apply spacing and land-use checks, so their order can differ.
+
+**Does hotter mean more polluted?** Between zones the relationship is almost absent: R² ≈ 0.032 in Delhi and 0.039 in Bengaluru. Across paired months Delhi shows a negative slope (−8.536 µmol/m² per °C; R² 0.598, n=29), while Bengaluru's link is almost absent (−1.734; R² 0.043, n=23). Monthly temperatures use MODIS and zone temperatures use Landsat. The third view subtracts each calendar-month mean from both readings, keeping months with at least two paired observations, to check how much the seasonal cycle contributes. These are descriptive associations.
+
+**What do the land-cover equations mean?** Separate city OLS fits predict surface temperature from built-up and tree fractions (0–1). Delhi: `38.65 + 2.76 × built − 2.47 × trees` (R² 0.370, n=353); Bengaluru: `30.72 + 3.44 × built − 1.73 × trees` (R² 0.295, n=322). Multiply a coefficient by 0.10 to read a ten-percentage-point change with the other share held fixed; this is not evidence of causation.
+
 The answer card sums estimated residents in the highest tenth of zones by equal-weight overall risk. Story colours run from blue (bottom 40%) through pale yellow (next 30%) and orange (next 20%) to dark red (highest 10%). Tree cover reverses direction so less greenery means greater concern. Grey marks missing readings. Dark numbered markers select the highest-risk zones greedily, at least 1 km apart, after excluding available airfield or restricted flags. The flags are incomplete. Tiles require internet access; the observations, shapes and charts are bundled.
 
 Each zone’s dominant Dynamic World class determines its group in the land-type chart. Bars show the group’s area-weighted surface temperature minus the local average, with at least five measured zones per bar. Monthly lines keep missing months as gaps and shade 2020 for context. Area-wide NO₂ is too coarse to guide individual street interventions.
@@ -60,6 +66,8 @@ The central Delhi Landsat summer average was 40.5 °C versus 33.0 °C across six
 
 The random forest predicts LST from land cover, spectral indices and terrain. Site estimates require 150 complete cells and at least three occupied 2 km blocks.
 
+In **Place story**, select **Run planting model** after the five first-action zones. Results persist through reruns for the same observations. The three cards show the number of modelled candidates in the top-five shortlist, the highest-risk candidate's temperature change, and that candidate's 95% interval; the table reports each site separately. An interval spanning zero is labelled **Inconclusive**, rather than interpreting a small positive estimate as warming. These candidate zones may differ from the map markers because planting applies a land-cover screen.
+
 The planner screens cells of at least 1 ha with at least 25% combined bare, shrub or grass cover, zero classified water and less than 50% built cover. A 25% conversion moves one quarter of **existing bare cover** into trees. The model holds other predictors fixed. ΔLST is scenario minus baseline, in °C. The percentile interval comes from 100 paired spatial-block bootstrap refits. These are indicative associations. Field assessment is needed to establish access, planting feasibility and actual cooling.
 
 ### Earlier analytical methods
@@ -70,7 +78,7 @@ The earlier monthly view used MODIS surface temperature and Sentinel-5P NO₂. R
 
 ## Architecture and operating limits
 
-Streamlit routes between the place story and Compare. Both use the same bundled observations or validated live extraction. Place story ranks zones, and About offers the planting model with held-out spatial validation.
+Streamlit routes between Place story, Compare two places and Heat vs pollution. The story and comparison use bundled observations or validated live extraction; the third page reads only bundled columns and needs no credentials. Place story offers the planting model with held-out spatial validation, while About contains sources and limits.
 
 Live runs are capped at 2,500 cells and use batches of at most 500. A smaller radius or larger cell size can bring an oversized request within budget. Results are cached for 24 hours, with up to 50 entries per live data cache. Compute actions share a 10-second session cooldown. Earth Engine API sockets have a 90-second inactivity timeout and allow two SDK retries with backoff. Backend load can push extraction beyond the one-minute target. Monitor project quota when serving concurrent users. [Security and quota notes](SECURITY.md)
 

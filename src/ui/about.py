@@ -1,62 +1,79 @@
-"""Source notes and optional, spatially validated cooling scenario."""
+"""Concise sources, interpretation and operating limits."""
 
+import pandas as pd
 import streamlit as st
-from sklearn.metrics import r2_score, root_mean_squared_error
-from sklearn.model_selection import GroupKFold, cross_val_predict
 
-from src.index import score_exposure
-from src.model import fit_drivers, InsufficientDriverData
-from src.planner import rank_sites, estimate_scenario
-from src.ui.limits import begin_compute
-from src.ui.places import HEAT, AIR
+from src.ui.score import render_score_formula
 
 
-def render_about(place):
-    with st.expander("About and limits"):
+def render_about(*, include_score=True):
+    with st.expander("How this works and what to keep in mind"):
+        st.subheader("What you are looking at")
         st.write(
-            "Saved maps use June, July and August 2019–2021, with 500 m zones within 5 km. Summer here misses Delhi’s worst winter air. The lines cover January 2019 through December 2021. Gaps mean the satellite had too few clear readings."
+            "Saved maps combine satellite observations for June–August 2019–21 in 500 m zones "
+            "within 5 km of each city centre. Colours locate relative risks and cover patterns; "
+            "monthly charts show available observations across January 2019–December 2021."
         )
+        st.subheader("How the score works")
+        if include_score:
+            render_score_formula()
+            st.write(
+                "Each rank is (average rank − 0.5) / count; population uses the same rule, "
+                "with zero residents giving zero risk."
+            )
+        else:
+            st.write(
+                "The ‘How the risk score works’ card above explains the equal-weight formula and population rank."
+            )
         st.write(
-            f"Landsat 8/9 measures {HEAT}; MODIS supplies the monthly daytime readings. Surface temperatures can also be cooler than the air. The maps average clear-sky summer zone measurements across the area; each zone uses a median Landsat composite. The sensors observe different footprints and times."
+            "Story ranks are local; Compare ranks combined risk across both places together. "
+            "Blue is the lowest 40%, yellow the next 30%, orange the next 20% and dark red the highest 10%; grey means missing data."
         )
-        st.write(
-            f"Sentinel-5P measures nitrogen dioxide: {AIR}. Dynamic World estimates land cover at 10 m. WorldPop estimates the residential population in 2020; people and neighbourhoods change."
+        st.table(
+            pd.DataFrame(
+                [
+                    ["Surface heat", "Landsat 8/9", "~100 m thermal", "Summer 2019–21"],
+                    [
+                        "Air pollution (NO₂)",
+                        "Sentinel-5P",
+                        "Several km pixels",
+                        "Summer 2019–21",
+                    ],
+                    ["Greenery", "Sentinel-2 NDVI", "10 m", "Summer 2019–21"],
+                    ["Land cover", "Dynamic World", "10 m", "Summer 2019–21"],
+                    ["People", "WorldPop", "100 m, 2020 baseline", "2020"],
+                    ["Terrain", "SRTM", "30 m", "2000"],
+                    [
+                        "Monthly surface heat / NO₂",
+                        "MODIS / Sentinel-5P",
+                        "1 km / several km",
+                        "Jan 2019–Dec 2021",
+                    ],
+                ],
+                columns=["Layer", "Source", "Detail", "Period"],
+            ).set_index("Layer")
         )
-        st.write(
-            "Overall risk combines heat, air pollution and lack of greenery equally, then accounts for residents. Dark red marks the highest tenth locally, orange the next fifth, pale yellow the next three tenths and blue the lowest four tenths. Compare ranks combined risk across both places together. Darker green means more tree cover. Grey means no data."
+        st.subheader("Good to know")
+        st.markdown(
+            "- **Summer and clear skies only:** maps miss winter pollution, and monsoon clouds leave gaps in Bengaluru, so averages can favour clearer days.\n"
+            "- **NO₂ columns span several kilometres:** they cannot locate street-level pollution or measure the concentration people breathe.\n"
+            "- **Surface heat differs from air temperature:** it describes roofs and ground; Landsat and MODIS also differ by about 7.5 °C in Delhi’s available summer observations, so sensor values are not interchangeable.\n"
+            "- **People use a 2020 baseline:** WorldPop estimates residential counts, so growth and daytime movement are missing.\n"
+            "- **Airfield and restricted-land flags are incomplete:** markers and candidate sites still need ownership, safety and access checks.\n"
+            "- **Planting estimates are indicative:** land cover is uncertain and the model learns associations, so an interval including zero is inconclusive."
         )
-        st.write(
-            "Markers skip known airfield and restricted-land flags. Land cover cannot establish ownership, permission or airfield boundaries. Check on site before acting. Street tiles come from OpenStreetMap and satellite imagery from Esri."
-        )
-        st.caption("Landsat (100 m) and MODIS (1 km) disagree in Delhi: MODIS reads about 7 °C cooler over the same summer months. We could not find a day clear in both to pin down why. Possible causes are pixel size, dust or haze filtering and different observation days. Maps use Landsat; monthly lines use MODIS only as change relative to each place's own average.")
-        st.caption("Bengaluru's June–August window is its monsoon, so cloud leaves few clear days; March–May would suit it better.")
-        if place is None:
-            return
-        st.write(
-            f"Cooling estimates for {place.name} explore what might happen if trees replaced a quarter of existing bare ground. They are estimates, not guarantees."
-        )
-        if st.button("Estimate cooling and check the model") and begin_compute():
-            try:
-                with st.spinner("Checking the model against held-out neighbourhoods…"):
-                    model = fit_drivers(place.cells)
-                    train = model.validation
-                    predictions = cross_val_predict(
-                        model.forest,
-                        model.features,
-                        train.observed_c,
-                        groups=train.block,
-                        cv=GroupKFold(n_splits=min(5, train.block.nunique())),
-                    )
-                    sites = rank_sites(score_exposure(place.cells), top_n=5)
-                    changes = estimate_scenario(model, sites, 25)
-                st.write(
-                    f"Across held-out 2 km blocks, the root mean square error was {root_mean_squared_error(train.observed_c, predictions):.1f} °C and R² was {r2_score(train.observed_c, predictions):.2f}."
-                )
-                if changes.delta_c.notna().any():
-                    st.write(
-                        f"Average modelled change across {changes.delta_c.count()} planting candidates: {changes.delta_c.mean():+.2f} °C. The model holds other land characteristics fixed."
-                    )
-                else:
-                    st.info("No planting candidates had complete model inputs.")
-            except InsufficientDriverData:
-                st.info("Too few complete zones or neighbourhoods to estimate cooling.")
+        with st.expander("Technical notes"):
+            st.write(
+                "Inputs are checked on the server: finite coordinates, radius 1–15 km, supported "
+                "grid sizes and dates, and at most 2,500 cells; Compare fixes the radius at 5 km."
+            )
+            st.write(
+                "Live work uses batches of at most 500 cells, a shared 10-second cooldown, "
+                "90-second request timeouts with at most two retries, and cached data for up to one day (50 entries). "
+                "Saved city data work offline; street and imagery tiles need internet."
+            )
+            st.write(
+                "Cloud masks and joint valid-area coverage control missing scores. Dynamic World "
+                "is a probabilistic classification; the fixed WorldPop collection is deprecated. "
+                "Street tiles: OpenStreetMap; imagery: Esri."
+            )

@@ -26,6 +26,11 @@ def test_story(monkeypatch):
     assert not app.exception
     assert len(app.metric) == 3
     assert len(app.get("iframe")) == 1
+    assert len(app.latex) == 1
+    assert any("Run planting model" == item.label for item in app.button)
+    assert any(
+        "How this works and what to keep in mind" == item.label for item in app.expander
+    )
     assert sum("Source: Terra MODIS" in c.value for c in app.caption) == 1
     assert any("5 zones to check first" == item.value for item in app.subheader)
 
