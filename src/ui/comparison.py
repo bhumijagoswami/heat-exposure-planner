@@ -8,12 +8,18 @@ from src.config import summer_months
 from src.ui.basemap import (
     COLORS,
     LAND_COLORS,
-    LAYERS,
     pooled_risk,
     relative_bands,
     render_map,
 )
-from src.ui.places import HEAT, choose_place, mean, monthly_line
+from src.ui.places import choose_place, mean, monthly_line
+
+MAP_CAPTIONS = {
+    "Surface heat": "Compare colours using the shared temperature scale · Landsat · summer 2019–21.",
+    "Tree cover": "Darker green means a larger share of tree cover · Dynamic World · summer 2019–21.",
+    "People": "Darker purple means more estimated residents per zone · WorldPop · 2020.",
+    "Combined risk": "Higher bands mark higher risk across the two places pooled · Landsat · Sentinel-5P · Sentinel-2 · WorldPop.",
+}
 
 
 def stats(place):
@@ -51,7 +57,7 @@ def render_comparison():
     st.caption(
         "Both places use the same summer months and the same satellite cloud filters."
     )
-    layer = st.radio("Map layer", [*LAYERS[1:], "Combined risk"], horizontal=True)
+    layer = st.radio("Map layer", list(MAP_CAPTIONS), horizontal=True)
     bands = (
         pooled_risk([p.cells for p in places])
         if layer == "Combined risk"
@@ -64,18 +70,7 @@ def render_comparison():
                 place.cells,
                 layer=layer,
                 pooled=pooled,
-                caption=f"{layer} · "
-                + (
-                    {
-                        "Surface heat": "Landsat 8/9",
-                        "Tree cover": "Dynamic World",
-                        "Built-up share": "Dynamic World",
-                        "Land cover type": "Dynamic World",
-                        "People": "WorldPop (2020)",
-                        "Combined risk": "Landsat, Sentinel-2, Sentinel-5P and WorldPop (2020)",
-                    }[layer]
-                )
-                + f" · {place.window}.",
+                caption=MAP_CAPTIONS[layer],
             )
     left, right = stats(a), stats(b)
     labels = [
@@ -106,8 +101,7 @@ def render_comparison():
     st.caption(
         "↑ marks the less favourable reading; on the population row it identifies the larger number of residents potentially affected."
     )
-    for field in ("roi_day_c", "roi_no2"):
-        monthly_line(places, field)
+    monthly_line(places, "roi_no2")
     covers = []
     for i, p in enumerate(places):
         fractions = p.cells.filter(regex="^dw_frac_")
@@ -130,11 +124,9 @@ def render_comparison():
             for label, v in values.items()
         )
     cover = pd.DataFrame(covers)
-    built = cover.loc[cover.Land.eq("Built-up"), "Share"].tolist()
-    st.subheader(
-        f"Built-up land covers {built[0]:.0f}% of A and {built[1]:.0f}% of B"
-        if all(pd.notna(built))
-        else "Land cover observations are incomplete"
+    st.subheader("What each place is made of")
+    st.write(
+        "Compare the share of each area occupied by buildings, trees and other cover."
     )
     st.altair_chart(
         alt.Chart(cover)
@@ -144,7 +136,7 @@ def render_comparison():
             x=alt.X("sum(Share):Q", title="Land cover (%)"),
             color=alt.Color(
                 "Land:N",
-                legend=alt.Legend(labelLimit=0, orient="bottom", columns=2),
+                legend=alt.Legend(labelLimit=0, orient="bottom", columns=1),
                 scale=alt.Scale(
                     domain=list(LAND_COLORS),
                     range=list(LAND_COLORS.values()),
@@ -154,28 +146,31 @@ def render_comparison():
         ),
         width="stretch",
     )
-    st.caption(f"Share of land by cover type · Dynamic World (10 m) · {a.window}.")
+    st.caption(
+        "Each coloured segment shows that land type's share of the area · Dynamic World · summer 2019–21."
+    )
     shares = [left[-1], right[-1]]
     st.subheader(
-        f"{shares[0]:.0f}% of residents in A and {shares[1]:.0f}% in B live in zones where the ground surface exceeds 40 °C"
+        f"Above 40 °C: {shares[0]:.0f}% of residents in A, {shares[1]:.0f}% in B"
         if all(pd.notna(shares))
         else "Population or heat observations are incomplete"
     )
+    st.write("Share living in zones where the ground surface exceeds 40 °C.")
     chart = pd.DataFrame({"Place": ["A · " + a.name, "B · " + b.name], "Share": shares})
     base = alt.Chart(chart).encode(
         y=alt.Y("Place:N", title=None, axis=alt.Axis(labelLimit=0)),
         x=alt.X(
             "Share:Q",
-            title="Residents in zones where the ground surface exceeds 40 °C (%)",
+            title="Residents above 40 °C (%)",
             scale=alt.Scale(domain=[0, 100]),
         ),
     )
     zeros = base.transform_filter("datum.Share === 0").mark_text(
-        align="left", dx=4, text="0%"
+        align="left", dx=4, text="0%", color="#dce8e6"
     )
     st.altair_chart(base.mark_bar(color=COLORS[2]) + zeros, width="stretch")
     st.caption(
-        f"Residents in zones above 40 °C among those with temperature readings · Landsat 8/9 ({HEAT}), WorldPop (2020) · {a.window}."
+        "Longer bars mean a larger share of residents in zones above 40 °C, among those with heat readings · Landsat · WorldPop · summer 2019–21."
     )
     first = (
         f"Average surface temperatures were {left[0]:.1f} °C in A and {right[0]:.1f} °C in B."

@@ -144,7 +144,10 @@ def _drivers_chart():
             yOffset="Place:N",
             x=alt.X(
                 "Change:Q",
-                title="Surface-temperature change for +10 percentage points (°C)",
+                title=[
+                    "Surface-temperature change (°C)",
+                    "+10 percentage points of cover",
+                ],
             ),
             color=alt.Color(
                 "Place:N",
@@ -182,11 +185,7 @@ def _relationship_chart(city, view):
         f"**{response} = {fit['a']:.2f} {_signed(fit['b'])} × {predictor}**; "
         f"R² = {fit['r2']:.3f}, n = {fit['n']}."
     )
-    x_title = (
-        "Temperature departure from calendar-month mean (°C)"
-        if adjusted
-        else "Surface temperature (°C)"
-    )
+    x_title = "Temperature departure (°C)" if adjusted else "Surface temperature (°C)"
     y_title = "NO₂ departure (µmol/m²)" if adjusted else "NO₂ column (µmol/m²)"
     dots = (
         alt.Chart(fit["points"])

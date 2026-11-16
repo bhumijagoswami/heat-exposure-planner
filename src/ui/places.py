@@ -1,6 +1,5 @@
 """Matched observation windows and plain-language chart helpers."""
 
-import calendar
 import logging
 from dataclasses import dataclass
 
@@ -8,15 +7,12 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from src.config import summer_months
 from src.demo import PRESETS, DEMO_DIR, load_demo
 from src.validate import validate_inputs
 from src.ui import drivers
 from src.ui.basemap import COLORS
 from src.ui.limits import begin_compute
 
-HEAT = "ground surface temperature, hotter than air temperature"
-AIR = "coarse pixels several km wide, so shown per area, not per zone"
 LAND = {
     "built": "Built-up",
     "bare": "Bare ground",
@@ -34,13 +30,6 @@ class Place:
     request: object
     cells: object
     months: pd.DataFrame
-
-    @property
-    def window(self):
-        months = ", ".join(
-            calendar.month_name[m] for m in summer_months(self.request.lat)
-        )
-        return f"{months} 2019–2021 · 500 m zones within {self.request.radius_km:g} km"
 
 
 @st.cache_data(max_entries=2, show_spinner=False)
@@ -191,9 +180,9 @@ def monthly_line(places, field):
     st.altair_chart(year + line, width="stretch")
     if heat:
         st.caption(
-            "Source: Terra MODIS (MOD11A2), daytime surface temperature. Zero is each place’s mean across its observed months in January 2019–December 2021; gaps are missing observations and shading marks 2020."
+            "Zero is this place’s observed monthly mean; gaps mean missing readings and shading marks 2020 · Terra MODIS · 2019–21."
         )
         return
     st.caption(
-        f"Monthly area averages · Sentinel-5P · {AIR} · January 2019–December 2021 · shaded 2020: Lockdown year: pollution fell sharply."
+        "Higher points mean more NO₂ over the area; gaps are missing readings and shading marks 2020 · Sentinel-5P · 2019–21."
     )

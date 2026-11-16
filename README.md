@@ -51,7 +51,7 @@ The answer card sums estimated residents in the highest tenth of zones by equal-
 
 Each zone’s dominant Dynamic World class determines its group in the land-type chart. Bars show the group’s area-weighted surface temperature minus the local average, with at least five measured zones per bar. Monthly lines keep missing months as gaps and shade 2020 for context. Area-wide NO₂ is too coarse to guide individual street interventions.
 
-Compare uses June, July and August 2019–2021 for both presets, with the same Landsat quality mask, Sentinel-2 cloud filtering and Sentinel-5P cloud threshold. Both maps use the same 30–50 °C colour scale. The hottest-tenth gap measures local heat contrast. The share above 40 °C uses residents in zones with valid temperature and population.
+Compare uses June, July and August 2019–2021 for both presets, with the same Landsat quality mask, Sentinel-2 cloud filtering and Sentinel-5P cloud threshold. Choose Surface heat, Tree cover, People or Combined risk; the charts retain monthly NO₂, “What each place is made of”, and residents above 40 °C. Both maps use the same temperature colour bands. The hottest-tenth gap measures local heat contrast. The share above 40 °C uses residents in zones with valid temperature and population; the monthly temperature chart remains in Place story.
 
 The central Delhi Landsat summer average was 40.5 °C versus 33.0 °C across six available MODIS summer months (7.5 °C apart). Bengaluru averaged 33.7 °C versus 32.4 °C across three available months. Missing observations, spatial resolution and overpass timing affect the comparison.
 

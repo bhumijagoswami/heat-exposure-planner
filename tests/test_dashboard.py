@@ -31,7 +31,7 @@ def test_story(monkeypatch):
     assert any(
         "How this works and what to keep in mind" == item.label for item in app.expander
     )
-    assert sum("Source: Terra MODIS" in c.value for c in app.caption) == 1
+    assert sum("Terra MODIS" in c.value for c in app.caption) == 1
     assert any("5 zones to check first" == item.value for item in app.subheader)
 
 
@@ -52,6 +52,17 @@ def test_compare_custom_place_with_missing_observations(monkeypatch):
     page = AppTest.from_file("../app.py").run()
     page.radio[0].set_value("Compare two places").run()
     assert not page.exception and len(page.get("iframe")) == 2
+    assert page.radio[1].options == [
+        "Surface heat",
+        "Tree cover",
+        "People",
+        "Combined risk",
+    ]
+    assert len(page.get("vega_lite_chart")) == 3
+    assert not any("MODIS" in caption.value for caption in page.caption)
+    assert any("What each place is made of" == item.value for item in page.subheader)
+    assert len(page.latex) == 1
+    assert not any("Run planting model" == button.label for button in page.button)
     page.radio[1].set_value("Combined risk").run()
     assert not page.exception and len(page.get("iframe")) == 2
     assert page.table[0].value.shape == (6, 2)
@@ -62,17 +73,17 @@ def test_compare_custom_place_with_missing_observations(monkeypatch):
     assert "No readings" in page.table[0].value.iloc[0].tolist()
 
 
-def test_compare_temperature_is_centered_within_each_place(monkeypatch):
+@pytest.mark.parametrize("name", PRESETS)
+def test_story_temperature_is_centered_within_its_place(monkeypatch, name):
     from src.ui import places
 
-    selected = [places.preset(name) for name in PRESETS]
+    place = places.preset(name)
     charts = []
     monkeypatch.setattr(
         places.st, "altair_chart", lambda chart, **kwargs: charts.append(chart)
     )
-    places.monthly_line(selected, "roi_day_c")
+    places.monthly_line([place], "roi_day_c")
     points = charts[0].layer[1].data
-    for (_, observed), place in zip(points.groupby("Place"), selected):
-        raw = place.months.roi_day_c.dropna()
-        assert observed.Reading.tolist() == pytest.approx((raw - raw.mean()).tolist())
-        assert observed.Month.tolist() == raw.index.tolist()
+    raw = place.months.roi_day_c.dropna()
+    assert points.Reading.tolist() == pytest.approx((raw - raw.mean()).tolist())
+    assert points.Month.tolist() == raw.index.tolist()
