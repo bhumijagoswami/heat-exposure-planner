@@ -1,4 +1,7 @@
 # Progress
+- Final A — Created final from main; preserved prior manual files in stash. Replaced wrong-app imports with working entrypoint and offline Heat vs pollution page using real map scoring.
+- Final A QA — 12 targeted tests passed (both cities, all views, safe chart errors); all supplied regression checks match rounding. Next: B story/About polish, then C Compare trim; no live tests, audit, secret scan or push requested.
+- Prior UI QA — Map/story/Compare redesign and land-use flags: 134 offline tests passed; legacy live checks and release scans were clean.
 - Cloud readiness — Verified Python 3.12 Linux wheel installation from hashed requirements.txt, mocked hosted authentication and offline presets. Final make check: 116 passed, 8 live deselected; audit, full-history secret scan and tracked-name check clean. No deployment or live auth performed.
 - Done — M1 scaffold on `dev`, Python 3.12 venv, hash-locked development dependencies, credential exclusions, local Git hook and security notes.
 - Done — M2 SDK initialization with local login or deployment secrets, validated analysis inputs, offline tests and opt-in live smoke test.
@@ -33,7 +36,3 @@
 - Live M11 QA — All ten live tests passed, including default Delhi timing and a Pacific ocean ROI. Tested 90-second socket timeout configuration, two SDK retries with backoff, cache isolation and hostile inputs offline. Full history and local QA logs scanned clean.
 - Release QA — Ten live tests passed. Python 3.12 Linux wheel resolution passed with required hashes. Hosted secrets, missing secrets and malformed configuration are covered offline.
 - Handoff — Deployment instructions are in README.md. Rotate any deployment service-account key after grading using SECURITY.md.
-- UI step 1 — Map opens first with OSM/Esri imagery, five selectable grid layers, legend and click details. Dashboard tests and offline Chrome interaction checks passed; live tile delivery unverified.
-- UI step 2 — Seven tab reading guides, chart takeaways, shared zone names and Google Maps links, hotspot bands, µmol/m² NO₂ and plain-language trend findings. Seven targeted offline tests passed.
-- UI step 3 — Comparison tab supports preset/custom pairs over matched summer windows, area-weighted metrics, cover, maps and monthly overlays. Two targeted offline UI tests passed, including mocked custom extraction.
-- UI step 4 — Planner and exports flag the Delhi airport study district and unverified land uses. Both presets have 36 observed NO₂ months; robust STL assigned weights below 0.5 to all 12 months in 2020. Added chart explanation and resolution note. Final make check: 134 passed, 10 live deselected; Ruff/Bandit passed.
